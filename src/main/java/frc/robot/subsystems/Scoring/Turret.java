@@ -2,7 +2,7 @@
 // Open Source Software; you can modify and/or share it under the terms of
 // the WPILib BSD license file in the root directory of this project.
 
-package frc.robot.subsystems;
+package frc.robot.subsystems.Scoring;
 
 import com.ctre.phoenix6.StatusCode;
 import com.ctre.phoenix6.configs.MotionMagicConfigs;
@@ -85,7 +85,7 @@ public class Turret extends SubsystemBase {
       case IDLE: 
         yield SystemState.IDLING;
       case AIM:
-        boolean isInAllianceZone;
+        boolean isInAllianceZone = true;
         if (isInAllianceZone) {
           yield SystemState.PASS_AIMING;
         } else {
@@ -106,13 +106,13 @@ public class Turret extends SubsystemBase {
         position = 0.0;
         break;
       case PASS_AIMING:
-        position = TurretConstants.PASS_AIM_Position;
+        position = TurretConstants.passAimPosition;
         break;
       case HUB_AIMING:
-        position = TurretConstants.HUB_AIM_Position;
+        position = TurretConstants.hubAimPosition;
         break;
       case TRENCH_PRESETTING:
-        position = TurretConstants.TRENCH_PRESET_Position ;
+        position = TurretConstants.trenchPresetPosition;
         break;
     }
   }  
