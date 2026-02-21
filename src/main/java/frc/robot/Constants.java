@@ -206,7 +206,7 @@ public final class Constants {
       new Rotation3d(
         0, 
         Units.degreesToRadians(20), 
-        Units.degreesToRadians(45))
+        Units.degreesToRadians(135))
         );
     public static String cameraName = "camera1";
     public static String camera2Name = "camera2";
