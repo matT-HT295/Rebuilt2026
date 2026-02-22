@@ -10,6 +10,8 @@ import frc.robot.commands.Autos;
 import frc.robot.commands.ExampleCommand;
 import frc.robot.subsystems.Scoring.Shooter;
 import frc.robot.subsystems.Scoring.Turret;
+import frc.robot.subsystems.Drive.CommandSwerveDrivetrain;
+import frc.robot.subsystems.Drive.TunerConstants;
 import frc.robot.subsystems.Intake.Feeder;
 import frc.robot.subsystems.Intake.Intake;
 
@@ -21,10 +23,23 @@ import frc.robot.commands.Lights.WPIlib.SetBreathingPattern;
 import frc.robot.commands.Lights.WPIlib.SetSolidColor;
 import frc.robot.commands.Lights.WPIlib.DisableLED;
 
+import frc.robot.subsystems.LED.TestLights;
+
+import static edu.wpi.first.units.Units.Meter;
+import static edu.wpi.first.units.Units.MetersPerSecond;
+import static edu.wpi.first.units.Units.RadiansPerSecond;
+import static edu.wpi.first.units.Units.RotationsPerSecond;
+
+import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
+import com.ctre.phoenix6.swerve.SwerveRequest;
+
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -37,10 +52,23 @@ public class RobotContainer {
   // private final TestLights lights = new TestLights();
   private final LEDSubsystem_WPIlib ledSubsystemWPIlib = new LEDSubsystem_WPIlib();
 
+  public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
+
+  private double MaxSpeed = 1.0 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
+  private double MaxAngularRate = RotationsPerSecond.of(0.75).in(RadiansPerSecond); // 3/4 of a rotation per second max angular velocity
+  private final Telemetry logger = new Telemetry(MaxSpeed);
+  private final SwerveRequest.SwerveDriveBrake brake = new SwerveRequest.SwerveDriveBrake();
+  private final SwerveRequest.PointWheelsAt point = new SwerveRequest.PointWheelsAt();
+
   // Replace with CommandPS4Controller or CommandJoystick if needed
   private final CommandXboxController driver = new CommandXboxController(OperatorConstants.kDriverControllerPort);
   private final CommandXboxController operator = new CommandXboxController(OperatorConstants.kOperatorControllerPort);
 
+
+  private final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
+                        .withDeadband(MaxSpeed * 0.1).withRotationalDeadband(MaxAngularRate * 0.1)
+                        .withDriveRequestType(DriveRequestType.OpenLoopVoltage); // Use open-loop control for drive
+        
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
     // Configure the trigger bindings
@@ -61,6 +89,45 @@ public class RobotContainer {
     // driver.a().onTrue(new InstantCommand(() -> lights.setColor(LightsConstants.Colors.OFF)));
     driver.b().onTrue(new SetSolidColor(ledSubsystemWPIlib, LightsConstants.BRGColors.get("magenta")));
     driver.a().onTrue(new DisableLED(ledSubsystemWPIlib));
+    // Note that X is defined as forward according to WPILib convention,
+    // and Y is defined as to the left according to WPILib convention.
+    drivetrain.setDefaultCommand(
+        // Drivetrain will execute this command periodically
+        drivetrain.applyRequest(() ->
+            drive.withVelocityX(-driver.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
+                .withVelocityY(-driver.getLeftX() * MaxSpeed) // Drive left with negative X (left)
+                .withRotationalRate(-driver.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
+        )
+    );
+
+    // Idle while the robot is disabled. This ensures the configured
+    // neutral mode is applied to the drive motors while disabled.
+    final var idle = new SwerveRequest.Idle();
+    RobotModeTriggers.disabled().whileTrue(
+        drivetrain.applyRequest(() -> idle).ignoringDisable(true)
+    );
+    driver.leftBumper().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
+
+    // driver.a().whileTrue(drivetrain.applyRequest(() -> brake));
+    // driver.b().whileTrue(drivetrain.applyRequest(() ->
+    //     point.withModuleDirection(new Rotation2d(-joystick.getLeftY(), -joystick.getLeftX()))
+    // ));
+
+    // Run SysId routines when holding back/start and X/Y.
+    // Note that each routine should be run exactly once in a single log.
+    // joystick.back().and(joystick.y()).whileTrue(drivetrain.sysIdDynamic(Direction.kForward));
+    // joystick.back().and(joystick.x()).whileTrue(drivetrain.sysIdDynamic(Direction.kReverse));
+    // joystick.start().and(joystick.y()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kForward));
+    // joystick.start().and(joystick.x()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kReverse));
+
+    // // Reset the field-centric heading on left bumper press.
+    // joystick.leftBumper().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
+
+    drivetrain.registerTelemetry(logger::telemeterize);
+
+    driver.b().onTrue(new InstantCommand(() -> lights.setColor(LightsConstants.Colors.MAGENTA)));
+    driver.a().onTrue(new InstantCommand(() -> lights.setColor(LightsConstants.Colors.OFF)));
+
     
   }
 
