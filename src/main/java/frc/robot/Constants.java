@@ -4,8 +4,18 @@
 
 package frc.robot;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.Vector;
 
+import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import frc.util.PolynomialRegression;
@@ -164,5 +174,47 @@ public final class Constants {
       INTAKING,
       SHOOTING
     }
+  }
+
+  public static class VisionConstants {
+    public static double bumperToBumper = 34.050; // inches
+    public static Transform3d kRobotToCam = new Transform3d(
+      new Translation3d(
+        Units.inchesToMeters(19.41), 
+        0, 
+        Units.inchesToMeters(6.6)),
+      new Rotation3d(
+        0, 
+        Units.degreesToRadians(23), 
+        0)
+      ); // TODO: edit transform 3d for this cam
+    public static Transform3d kRobotToCam2 = new Transform3d(
+      new Translation3d(
+        -(Units.inchesToMeters(12.889)), 
+        Units.inchesToMeters(0.836),
+        Units.inchesToMeters(9.317)),
+      new Rotation3d(
+        0, 
+        Units.degreesToRadians(20), 
+        Units.degreesToRadians(45))
+        );
+    public static Transform3d kRobotToCam3 = new Transform3d(
+      new Translation3d(
+        -(Units.inchesToMeters(12.888)), 
+        -(Units.inchesToMeters(12.837)),
+        Units.inchesToMeters(9.378)),
+      new Rotation3d(
+        0, 
+        Units.degreesToRadians(20), 
+        Units.degreesToRadians(135))
+        );
+    public static String cameraName = "camera1";
+    public static String camera2Name = "camera2";
+    public static String camera3Name = "camera3";
+    /* standard deviations for vision calculations */
+    public static edu.wpi.first.math.Vector<N3> kSingleTagStdDevs = VecBuilder.fill(2, 2, 2);
+    public static edu.wpi.first.math.Vector<N3> kMultiTagStdDevs = VecBuilder.fill(1, 1, 1);
+    public static edu.wpi.first.math.Vector<N3> odoStdDEvs = VecBuilder.fill(.2, .2, .2);
+    public static double odometryUpdateFrequency = 250;
   }
 }
