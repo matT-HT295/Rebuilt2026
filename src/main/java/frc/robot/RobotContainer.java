@@ -6,6 +6,8 @@ package frc.robot;
 
 import frc.robot.Constants.LightsConstants;
 import frc.robot.Constants.OperatorConstants;
+import frc.robot.Constants.FeederConstants.FeederWantedState;
+import frc.robot.Constants.IntakeConstants.IntakeWantedState;
 import frc.robot.commands.Autos;
 import frc.robot.commands.ExampleCommand;
 import frc.robot.subsystems.Scoring.Shooter;
@@ -15,15 +17,12 @@ import frc.robot.subsystems.Drive.TunerConstants;
 import frc.robot.subsystems.Intake.Feeder;
 import frc.robot.subsystems.Intake.Intake;
 
-import frc.robot.subsystems.Lights.TestLights;
 import frc.robot.subsystems.Lights.LEDSubsystem_WPIlib;
 import frc.robot.commands.Lights.WPIlib.RunPattern;
 import frc.robot.commands.Lights.WPIlib.ScrollPattern;
 import frc.robot.commands.Lights.WPIlib.SetBreathingPattern;
 import frc.robot.commands.Lights.WPIlib.SetSolidColor;
 import frc.robot.commands.Lights.WPIlib.DisableLED;
-
-import frc.robot.subsystems.LED.TestLights;
 
 import static edu.wpi.first.units.Units.Meter;
 import static edu.wpi.first.units.Units.MetersPerSecond;
@@ -32,8 +31,12 @@ import static edu.wpi.first.units.Units.RotationsPerSecond;
 
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
+import com.pathplanner.lib.auto.AutoBuilder;
 
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -49,10 +52,15 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
  */
 public class RobotContainer {
   // The robot's subsystems and commands are defined here...
-  // private final TestLights lights = new TestLights();
-  private final LEDSubsystem_WPIlib ledSubsystemWPIlib = new LEDSubsystem_WPIlib();
-
+  private final LEDSubsystem_WPIlib normalLights = new LEDSubsystem_WPIlib();
   public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
+  private final Intake intake = new Intake();
+  private final Feeder feeder = new Feeder();
+  // private final Turret turret = new Turret(drivetrain);
+  // private final Shooter shooter = new Shooter();
+  // private final Vision vision = new Vision();
+  public SendableChooser<Command> sendableChooser = new SendableChooser<>();
+
 
   private double MaxSpeed = 1.0 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
   private double MaxAngularRate = RotationsPerSecond.of(0.75).in(RadiansPerSecond); // 3/4 of a rotation per second max angular velocity
@@ -73,6 +81,7 @@ public class RobotContainer {
   public RobotContainer() {
     // Configure the trigger bindings
     configureBindings();
+    configureAutoCommands();
   }
 
   /**
@@ -85,12 +94,9 @@ public class RobotContainer {
    * joysticks}.
    */
   private void configureBindings() {
-    // driver.b().onTrue(new InstantCommand(() -> lights.setColor(LightsConstants.Colors.MAGENTA)));
-    // driver.a().onTrue(new InstantCommand(() -> lights.setColor(LightsConstants.Colors.OFF)));
-    driver.b().onTrue(new SetSolidColor(ledSubsystemWPIlib, LightsConstants.BRGColors.get("magenta")));
-    driver.a().onTrue(new DisableLED(ledSubsystemWPIlib));
-    // Note that X is defined as forward according to WPILib convention,
-    // and Y is defined as to the left according to WPILib convention.
+    drivetrain.registerTelemetry(logger::telemeterize);
+    
+    /* DRIVER CONTROLS */
     drivetrain.setDefaultCommand(
         // Drivetrain will execute this command periodically
         drivetrain.applyRequest(() ->
@@ -99,20 +105,52 @@ public class RobotContainer {
                 .withRotationalRate(-driver.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
         )
     );
-
-    // Idle while the robot is disabled. This ensures the configured
-    // neutral mode is applied to the drive motors while disabled.
-    final var idle = new SwerveRequest.Idle();
-    RobotModeTriggers.disabled().whileTrue(
-        drivetrain.applyRequest(() -> idle).ignoringDisable(true)
-    );
     driver.leftBumper().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
-
+    
+    // Driver Helping
     // driver.a().whileTrue(drivetrain.applyRequest(() -> brake));
     // driver.b().whileTrue(drivetrain.applyRequest(() ->
     //     point.withModuleDirection(new Rotation2d(-joystick.getLeftY(), -joystick.getLeftX()))
-    // ));
+    // ));  
 
+    /* OPERATOR */
+
+
+
+    /* TESTING BUTTONS */
+    //intake
+    driver.x()
+      .onTrue(new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.TEST)))
+      .onFalse(new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.IDLE)));
+
+    //feeder
+    driver.y()
+      .onTrue(new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.FEEDTEST)))
+      .onFalse(new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.IDLE)));
+    
+    //lights
+    driver.b()
+      .onTrue(new SetSolidColor(normalLights, LightsConstants.BRGColors.get("magenta")));
+    driver.a()
+      .onTrue(new DisableLED(normalLights));
+
+    //turret
+    // operator.a()
+      // .onTrue(new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.TEST)))
+      // .onFalse(new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.IDLE)));
+
+    //shooter
+    // operator.b()
+      // .onTrue(new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.TEST)))
+      // .onFalse(new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.IDLE)));
+
+    /* UNNEEDED, DELETE */
+    // Idle while the robot is disabled. This ensures the configured
+    // neutral mode is applied to the drive motors while disabled.
+    // final var idle = new SwerveRequest.Idle();
+    // RobotModeTriggers.disabled().whileTrue(
+    //     drivetrain.applyRequest(() -> idle).ignoringDisable(true)
+    // );
     // Run SysId routines when holding back/start and X/Y.
     // Note that each routine should be run exactly once in a single log.
     // joystick.back().and(joystick.y()).whileTrue(drivetrain.sysIdDynamic(Direction.kForward));
@@ -120,15 +158,6 @@ public class RobotContainer {
     // joystick.start().and(joystick.y()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kForward));
     // joystick.start().and(joystick.x()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kReverse));
 
-    // // Reset the field-centric heading on left bumper press.
-    // joystick.leftBumper().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
-
-    drivetrain.registerTelemetry(logger::telemeterize);
-
-    driver.b().onTrue(new InstantCommand(() -> lights.setColor(LightsConstants.Colors.MAGENTA)));
-    driver.a().onTrue(new InstantCommand(() -> lights.setColor(LightsConstants.Colors.OFF)));
-
-    
   }
 
   /**
@@ -137,7 +166,12 @@ public class RobotContainer {
    * @return the command to run in autonomous
    */
   public Command getAutonomousCommand() {
-    // An example command will be run in autonomous
-    return null;
+    return sendableChooser.getSelected();
   }
+
+  public void configureAutoCommands() {
+    sendableChooser = AutoBuilder.buildAutoChooser();
+    SmartDashboard.putData("autos", sendableChooser);
+  }
+
 }

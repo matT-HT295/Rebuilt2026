@@ -23,14 +23,14 @@ import frc.util.LoggedTunableNumber;
 
 public class Feeder extends SubsystemBase {
   /* MOTORS */
-  private TalonFX intakeFeederMotor = new TalonFX(FeederConstants.intakeFeederMotorID, "rio");
-  private TalonFXConfiguration intakeFeederMotorConfig = new TalonFXConfiguration();
-  private TalonFX shootFeederMotor = new TalonFX(FeederConstants.shootFeederMotorID, "rio");
-  private TalonFXConfiguration shootFeederMotorConfig = new TalonFXConfiguration();
+  private TalonFX spindexerMotor = new TalonFX(FeederConstants.spindexerMotorID, "rio");
+  private TalonFXConfiguration spindexerMotorConfig = new TalonFXConfiguration();
+  private TalonFX towerMotor = new TalonFX(FeederConstants.towerMotorID, "rio");
+  private TalonFXConfiguration towerMotorConfig = new TalonFXConfiguration();
   
   //for velocity control
-  private double intakemotorspeed = 0.0;
-  private double shootmotorspeed = 0.0;
+  private double spindexerMotorSpeed = 0.0;
+  private double towerMotorSpeed = 0.0;
   final MotionMagicVelocityVoltage mm_request = new MotionMagicVelocityVoltage(0);
   //for position control
   private double position = 0.0;
@@ -53,15 +53,15 @@ public class Feeder extends SubsystemBase {
     /* SETUP CONFIG */
     
     // CURRENT LIMITS
-    intakeFeederMotorConfig.CurrentLimits.SupplyCurrentLimit = FeederConstants.SupplyCurrentLimit;
-    intakeFeederMotorConfig.CurrentLimits.StatorCurrentLimit = FeederConstants.StatorCurrentLimit;
-    shootFeederMotorConfig.CurrentLimits.SupplyCurrentLimit = FeederConstants.SupplyCurrentLimit;
-    shootFeederMotorConfig.CurrentLimits.StatorCurrentLimit = FeederConstants.StatorCurrentLimit;
+    spindexerMotorConfig.CurrentLimits.SupplyCurrentLimit = FeederConstants.SupplyCurrentLimit;
+    spindexerMotorConfig.CurrentLimits.StatorCurrentLimit = FeederConstants.StatorCurrentLimit;
+    towerMotorConfig.CurrentLimits.SupplyCurrentLimit = FeederConstants.SupplyCurrentLimit;
+    towerMotorConfig.CurrentLimits.StatorCurrentLimit = FeederConstants.StatorCurrentLimit;
 
     //APPLY CONFIG TO MOTOR
     StatusCode status = StatusCode.StatusCodeNotInitialized;
     for (int i = 0; i < 5; ++i) {
-      status = intakeFeederMotor.getConfigurator().apply(intakeFeederMotorConfig);
+      status = spindexerMotor.getConfigurator().apply(spindexerMotorConfig);
       if (status.isOK()) break;
     }
     if (!status.isOK()) {
@@ -69,7 +69,7 @@ public class Feeder extends SubsystemBase {
     }
   
     for (int i = 0; i < 5; ++i) {
-      status = shootFeederMotor.getConfigurator().apply(shootFeederMotorConfig);
+      status = towerMotor.getConfigurator().apply(towerMotorConfig);
       if (status.isOK()) break;
     }
     if (!status.isOK()) {
@@ -77,7 +77,7 @@ public class Feeder extends SubsystemBase {
     }
   }
 
-  public void setWantedFeederMode(FeederWantedState desiredState) {
+  public void setWantedFeederState(FeederWantedState desiredState) {
     this.wantedState = desiredState;
   }
 
@@ -89,6 +89,8 @@ public class Feeder extends SubsystemBase {
         yield SystemState.INTAKING;
       case SHOOT: 
         yield SystemState.SHOOTING;
+        case FEEDTEST:
+        yield SystemState.FEEDTESTING;
     };
   }
 
@@ -96,17 +98,20 @@ public class Feeder extends SubsystemBase {
   private void applyState(){
     switch(systemState){
       case IDLING:
-        intakemotorspeed = 0.0;
-        shootmotorspeed = 0.0;
+        spindexerMotorSpeed = 0.0;
+        towerMotorSpeed = 0.0;
         break;
       case INTAKING:
-        intakemotorspeed = FeederConstants.feederIntakeSpeed;
-        shootmotorspeed = 0.0;
+        spindexerMotorSpeed = FeederConstants.feederIntakeSpeed;
+        towerMotorSpeed = 0.0;
         break;
       case SHOOTING:
-        shootmotorspeed = FeederConstants.feederShootSpeed;
-        intakemotorspeed = FeederConstants.feederIntakeSpeed;
+        spindexerMotorSpeed = FeederConstants.feederShootSpeed;
+        towerMotorSpeed = FeederConstants.feederIntakeSpeed;
         break;
+      case FEEDTESTING:
+        spindexerMotorSpeed = 0.10;
+        towerMotorSpeed = 0.1;
     }
   }
 
@@ -121,12 +126,14 @@ public class Feeder extends SubsystemBase {
     systemState = changeCurrentSystemState();
     applyState();
     //example of how to control motor for velocity
-    shootFeederMotor.setControl(mm_request.withVelocity(shootmotorspeed));
+    // towerMotor.setControl(mm_request.withVelocity(shootmotorspeed));
+    // //example of how to control motor for position
+    // towerMotor.setControl(mmE_request.withPosition(position));
+    // spindexerMotor.setControl(mm_request.withVelocity(intakemotorspeed));
     //example of how to control motor for position
-    shootFeederMotor.setControl(mmE_request.withPosition(position));
-    intakeFeederMotor.setControl(mm_request.withVelocity(intakemotorspeed));
-    //example of how to control motor for position
-    intakeFeederMotor.setControl(mmE_request.withPosition(position));
+    //spindexerMotor.setControl(mmE_request.withPosition(position));
+    spindexerMotor.set(spindexerMotorSpeed);
+    towerMotor.set(towerMotorSpeed);
   }
 
 }

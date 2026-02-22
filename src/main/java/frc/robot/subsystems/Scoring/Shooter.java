@@ -117,7 +117,7 @@ public class Shooter extends SubsystemBase {
     }
   }
 
-  public void setWantedShooterMode(ShooterWantedState desiredState) {
+  public void setWantedShooterState(ShooterWantedState desiredState) {
     this.wantedState = desiredState;
   }
 
@@ -147,6 +147,8 @@ public class Shooter extends SubsystemBase {
         yield SystemState.PASS_SHOOTING;
       case HUB_SHOOT:
         yield SystemState.HUB_SHOOTING;
+      case TEST:
+        yield SystemState.TESTING;
     };
   }
 
@@ -172,6 +174,8 @@ public class Shooter extends SubsystemBase {
       case PASS_SHOOTING:
         motorspeed = ShooterConstants.shooterSpeedInterpolation.getPrediction(ShooterConstants.passDistance);
         position = ShooterConstants.hoodAngleInterpolation.getPrediction(ShooterConstants.passDistance);
+        break;
+      case TESTING:
         break;
     }
   }

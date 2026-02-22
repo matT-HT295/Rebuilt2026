@@ -4,6 +4,9 @@
 
 package frc.robot;
 
+import com.pathplanner.lib.commands.PathfindingCommand;
+
+import edu.wpi.first.net.PortForwarder;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
@@ -28,6 +31,12 @@ public class Robot extends TimedRobot {
     m_robotContainer = new RobotContainer();
   }
 
+   @Override
+  public void robotInit() {
+    PortForwarder.add(5800, "photonvision.local", 5800);
+    PathfindingCommand.warmupCommand().schedule();
+  }
+
   /**
    * This function is called every 20 ms, no matter the mode. Use this for items like diagnostics
    * that you want ran during disabled, autonomous, teleoperated and test.
@@ -42,6 +51,7 @@ public class Robot extends TimedRobot {
     // and running subsystem periodic() methods.  This must be called from the robot's periodic
     // block in order for anything in the Command-based framework to work.
     CommandScheduler.getInstance().run();
+    m_robotContainer.drivetrain.updateVisionMeasurements();
   }
 
   /** This function is called once each time the robot enters Disabled mode. */

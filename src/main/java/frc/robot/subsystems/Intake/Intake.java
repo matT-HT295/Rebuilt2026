@@ -15,8 +15,11 @@ import com.ctre.phoenix6.controls.MotionMagicVelocityVoltage;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 
+import edu.wpi.first.wpilibj.motorcontrol.Talon;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants.FeederConstants;
 import frc.robot.Constants.IntakeConstants;
 import frc.robot.Constants.IntakeConstants.IntakeWantedState;
 import frc.robot.Constants.IntakeConstants.SystemState;
@@ -25,6 +28,7 @@ import frc.util.LoggedTunableNumber;
 public class Intake extends SubsystemBase {
   /* MOTORS */
   private TalonFX intakeMotor = new TalonFX(IntakeConstants.intakeMotorID, "rio");
+  private TalonFX intakeExtensionMotor = new TalonFX(IntakeConstants.intakeExtensionMotorID, "rio");
   private TalonFXConfiguration intakeMotorConfig = new TalonFXConfiguration();
   //for velocity control
   private double motorspeed = 0.0;
@@ -33,21 +37,28 @@ public class Intake extends SubsystemBase {
   private double position = 0.0;
   final MotionMagicExpoVoltage mmE_request = new MotionMagicExpoVoltage(0);
   final DutyCycleOut m_leftrequestOut = new DutyCycleOut(0.0);
+  
+  private LoggedTunableNumber k_S = new LoggedTunableNumber("intake_s", IntakeConstants.intakeSVA[0]);
+  private LoggedTunableNumber k_V = new LoggedTunableNumber("intake_v", IntakeConstants.intakeSVA[1]);
+  private LoggedTunableNumber k_A = new LoggedTunableNumber("intake_a", IntakeConstants.intakeSVA[2]);
+  private LoggedTunableNumber k_P = new LoggedTunableNumber("intake_p", IntakeConstants.intakePID[0]);
+  private LoggedTunableNumber k_I = new LoggedTunableNumber("intake_i", IntakeConstants.intakePID[1]);
+  private LoggedTunableNumber k_D = new LoggedTunableNumber("intake_d", IntakeConstants.intakePID[2]);
   /* STATES */
   IntakeWantedState wantedState = IntakeWantedState.IDLE;
   SystemState systemState = SystemState.IDLING;
-  IntakeWantedState wantedState2 = IntakeWantedState.INTAKE;
-  SystemState systemState2 = SystemState.INTAKING;
-  IntakeWantedState wantedState3 = IntakeWantedState.SHOOT;
-  SystemState systemState3 = SystemState.SHOOTING;
-  IntakeWantedState wantedState4 = IntakeWantedState.RETRACT;
-  SystemState systemState4 = SystemState.RETRACTING;
   
 
   /** Creates a new Intake */
   public Intake() {
     /* SETUP CONFIG */
-    
+    intakeMotorConfig.Slot0.kS = k_S.get();
+    intakeMotorConfig.Slot0.kV = k_V.get();
+    intakeMotorConfig.Slot0.kA = k_A.get(); 
+    intakeMotorConfig.Slot0.kP = k_P.get();
+    intakeMotorConfig.Slot0.kI = k_I.get();
+    intakeMotorConfig.Slot0.kD = k_D.get();
+
     // CURRENT LIMITS
     intakeMotorConfig.CurrentLimits.SupplyCurrentLimit = IntakeConstants.SupplyCurrentLimit;
     intakeMotorConfig.CurrentLimits.StatorCurrentLimit = IntakeConstants.StatorCurrentLimit;
@@ -63,7 +74,23 @@ public class Intake extends SubsystemBase {
     }
   }
 
-  public void setWantedIntakeMode(IntakeWantedState desiredState) {
+  /**
+   * Check LoggedTunableNumbers. If changed, update PID and SVA values of motor
+   */
+  public void checkTunableValues() {
+    if (k_S.hasChanged() || k_V.hasChanged() || k_A.hasChanged() 
+    || k_P.hasChanged() || k_I.hasChanged() || k_D.hasChanged()) {
+      intakeMotorConfig.Slot0.kS = k_S.get();
+      intakeMotorConfig.Slot0.kV = k_V.get();
+      intakeMotorConfig.Slot0.kA = k_A.get(); 
+      intakeMotorConfig.Slot0.kP = k_P.get();
+      intakeMotorConfig.Slot0.kI = k_I.get();
+      intakeMotorConfig.Slot0.kD = k_D.get();
+      intakeExtensionMotor.getConfigurator().apply(intakeMotorConfig);
+    }
+  }
+
+  public void setWantedIntakeState(IntakeWantedState desiredState) {
     this.wantedState = desiredState;
   }
 
@@ -77,6 +104,8 @@ public class Intake extends SubsystemBase {
         yield SystemState.INTAKING;
       case RETRACT :
         yield SystemState.RETRACTING;
+      case TEST:
+        yield SystemState.TESTING;
     };
   }
 
@@ -88,7 +117,7 @@ public class Intake extends SubsystemBase {
         position = 0.0;
         break;
       case INTAKING:
-        position = IntakeConstants.intakingPosition; 
+        position = IntakeConstants.intakingMAXPosition; 
         motorspeed = IntakeConstants.intakingSpeed;
         break;
       case SHOOTING :
@@ -96,35 +125,33 @@ public class Intake extends SubsystemBase {
         break;
       case RETRACTING :
         motorspeed = IntakeConstants.retractingPos;
-
+        break;
+      case TESTING:
+        motorspeed = 0.1;
+        position = 5;
+        break;
     }
   }
   
-  /**
-   * Check LoggedTunableNumbers. If changed, update PID and SVA values of motor
-   */
-  // public void checkTunableValues() {
-  //   if (k_S.hasChanged() || k_V.hasChanged() || k_A.hasChanged() 
-  //   || k_P.hasChanged() || k_I.hasChanged() || k_D.hasChanged()) {
-  //     intakeMotorConfig.Slot0.kS = k_S.get();
-  //     intakeMotorConfig.Slot0.kV = k_V.get();
-  //     intakeMotorConfig.Slot0.kA = k_A.get(); 
-  //     intakeMotorConfig.Slot0.kP = k_P.get();
-  //     intakeMotorConfig.Slot0.kI = k_I.get();
-  //     intakeMotorConfig.Slot0.kD = k_D.get();
-  //   }
-  //   intakeMotor.getConfigurator().apply(intakeMotorConfig);
-  // }
+  private void LogValues() {
+    SmartDashboard.putNumber("Extension Motor Position", intakeExtensionMotor.getPosition().getValueAsDouble());
+    SmartDashboard.putNumber("Intake actual speed", intakeMotor.get());
+    SmartDashboard.putNumber("Extension Wanted Position", position);
+    SmartDashboard.putNumber("Intake Wanted Speed", motorspeed);
+    SmartDashboard.putString("INTAKE WANTED STATE", wantedState.toString());
+    SmartDashboard.putString("INTAKE SYSTEM STATE", systemState.toString());
+  }
 
   @Override
   public void periodic() {
-    // checkTunableValues();
+    LogValues();
+    checkTunableValues();
     systemState = changeCurrentSystemState();
     applyState();
     //example of how to control motor for velocity
-    intakeMotor.setControl(mm_request.withVelocity(motorspeed));
+    // intakeMotor.setControl(mm_request.withVelocity(motorspeed));
     //example of how to control motor for position
-    intakeMotor.setControl(mmE_request.withPosition(position));
+    intakeExtensionMotor.setControl(mmE_request.withPosition(position));
     // setting the request to the motor controller
     intakeMotor.setControl(m_leftrequestOut.withOutput(motorspeed));
   }

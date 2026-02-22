@@ -10,21 +10,27 @@ import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.ControlRequest;
 import com.ctre.phoenix6.controls.MotionMagicExpoVoltage;
-import com.ctre.phoenix6.controls.MotionMagicVelocityVoltage;
-import com.ctre.phoenix6.controls.VelocityVoltage;
+import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 
-import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.TurretConstants;
 import frc.robot.Constants.TurretConstants.TurretWantedState;
+import frc.robot.subsystems.Drive.CommandSwerveDrivetrain;
 import frc.robot.Constants.TurretConstants.SystemState;
 import frc.util.LoggedTunableNumber;
 
 public class Turret extends SubsystemBase {
+  private final CommandSwerveDrivetrain drivetrain;
   /* MOTORS */
   private TalonFX turretMotor = new TalonFX(TurretConstants.turretMotorID, "rio");
   private TalonFXConfiguration turretMotorConfig = new TalonFXConfiguration();
+  
+  /* ENCODERS */
+  private CANcoder encoder = new CANcoder(TurretConstants.encoderID, "rio");
+
   //for position control
   private double position = 0.0;
   final MotionMagicExpoVoltage mmE_request = new MotionMagicExpoVoltage(0);
@@ -33,6 +39,7 @@ public class Turret extends SubsystemBase {
   private LoggedTunableNumber k_S = new LoggedTunableNumber("turret_s", TurretConstants.turretSVA[0]);
   private LoggedTunableNumber k_V = new LoggedTunableNumber("turret_v", TurretConstants.turretSVA[1]);
   private LoggedTunableNumber k_A = new LoggedTunableNumber("turret_a", TurretConstants.turretSVA[2]);
+
   private LoggedTunableNumber k_P = new LoggedTunableNumber("turret_p", TurretConstants.turretPID[0]);
   private LoggedTunableNumber k_I = new LoggedTunableNumber("turret_i", TurretConstants.turretPID[1]);
   private LoggedTunableNumber k_D = new LoggedTunableNumber("turret_d", TurretConstants.turretPID[2]);
@@ -41,8 +48,10 @@ public class Turret extends SubsystemBase {
   TurretWantedState wantedState = TurretWantedState.IDLE;
   SystemState systemState = SystemState.IDLING;
 
+
   /** Creates a new Turret */
-  public Turret() {
+  public Turret(CommandSwerveDrivetrain drivetrain) {
+    this.drivetrain = drivetrain;
     /* SETUP CONFIG */
     
     // CURRENT LIMITS
@@ -76,7 +85,7 @@ public class Turret extends SubsystemBase {
     }
   }
 
-  public void setWantedTurretMode(TurretWantedState desiredState) {
+  public void setWantedTurretState(TurretWantedState desiredState) {
     this.wantedState = desiredState;
   }
 
@@ -95,9 +104,12 @@ public class Turret extends SubsystemBase {
         yield SystemState.TRENCH_PRESETTING;
       case CLOSE_PRESET:
         yield SystemState.CLOSE_PRESETTING;
+      case TEST:
+        yield SystemState.TESTING;
         
     };
   }
+  
 
     
   private void applyState(){
@@ -109,10 +121,14 @@ public class Turret extends SubsystemBase {
         position = TurretConstants.passAimPosition;
         break;
       case HUB_AIMING:
-        position = TurretConstants.hubAimPosition;
+        double calcTurretAngle = 
+          drivetrain.getPose().getRotation().getDegrees() - Math.atan(drivetrain.getYfromHub() / drivetrain.getXfromHub());
+        double desiredTurretAngle;
         break;
       case TRENCH_PRESETTING:
         position = TurretConstants.trenchPresetPosition;
+        break;
+      case TESTING:
         break;
     }
   }  
@@ -130,8 +146,9 @@ public class Turret extends SubsystemBase {
       turretMotorConfig.Slot0.kP = k_P.get();
       turretMotorConfig.Slot0.kI = k_I.get();
       turretMotorConfig.Slot0.kD = k_D.get();
+      turretMotor.getConfigurator().apply(turretMotorConfig);
+
     }
-    turretMotor.getConfigurator().apply(turretMotorConfig);
   }
 
   @Override
