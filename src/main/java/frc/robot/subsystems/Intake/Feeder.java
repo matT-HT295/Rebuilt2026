@@ -89,7 +89,7 @@ public class Feeder extends SubsystemBase {
         yield SystemState.INTAKING;
       case SHOOT: 
         yield SystemState.SHOOTING;
-        case FEEDTEST:
+      case FEEDTEST:
         yield SystemState.FEEDTESTING;
     };
   }
@@ -107,11 +107,11 @@ public class Feeder extends SubsystemBase {
         break;
       case SHOOTING:
         spindexerMotorSpeed = FeederConstants.feederShootSpeed;
-        towerMotorSpeed = FeederConstants.feederIntakeSpeed;
+        towerMotorSpeed = FeederConstants.feederShootSpeed;
         break;
       case FEEDTESTING:
-        spindexerMotorSpeed = 0.10;
-        towerMotorSpeed = 0.1;
+        spindexerMotorSpeed = 0.7;
+        towerMotorSpeed = 0.7;
     }
   }
 

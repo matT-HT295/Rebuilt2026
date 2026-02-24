@@ -33,6 +33,8 @@ public class Turret extends SubsystemBase {
 
   //for position control
   private double position = 0.0;
+    private double motorspeed = 0.0;
+
   final MotionMagicExpoVoltage mmE_request = new MotionMagicExpoVoltage(0);
 
   /* PIDFF CONTROL */
@@ -115,6 +117,7 @@ public class Turret extends SubsystemBase {
   private void applyState(){
     switch(systemState){
       case IDLING:
+        motorspeed = 0;
         position = 0.0;
         break;
       case PASS_AIMING:
@@ -129,6 +132,7 @@ public class Turret extends SubsystemBase {
         position = TurretConstants.trenchPresetPosition;
         break;
       case TESTING:
+        motorspeed = -0.1;
         break;
     }
   }  
@@ -146,6 +150,7 @@ public class Turret extends SubsystemBase {
       turretMotorConfig.Slot0.kP = k_P.get();
       turretMotorConfig.Slot0.kI = k_I.get();
       turretMotorConfig.Slot0.kD = k_D.get();
+
       turretMotor.getConfigurator().apply(turretMotorConfig);
 
     }
@@ -158,6 +163,7 @@ public class Turret extends SubsystemBase {
     applyState();
     //example of how to control motor for position
     turretMotor.setControl(mmE_request.withPosition(position));
+    turretMotor.set(motorspeed);
   }
 
 }

@@ -63,6 +63,11 @@ public class Intake extends SubsystemBase {
     intakeMotorConfig.CurrentLimits.SupplyCurrentLimit = IntakeConstants.SupplyCurrentLimit;
     intakeMotorConfig.CurrentLimits.StatorCurrentLimit = IntakeConstants.StatorCurrentLimit;
 
+    //Motion MAgic constants
+    intakeMotorConfig.MotionMagic.MotionMagicExpo_kA = IntakeConstants.intakeMotionMagicExpoK_A;    
+    intakeMotorConfig.MotionMagic.MotionMagicExpo_kV = IntakeConstants.intakeMotionMagicExpoK_V;
+    intakeMotorConfig.MotionMagic.MotionMagicCruiseVelocity = IntakeConstants.intakeMotionMagicCruiseVel;
+
     //APPLY CONFIG TO MOTOR
     StatusCode status = StatusCode.StatusCodeNotInitialized;
     for (int i = 0; i < 5; ++i) {
@@ -104,8 +109,8 @@ public class Intake extends SubsystemBase {
         yield SystemState.INTAKING;
       case RETRACT :
         yield SystemState.RETRACTING;
-      case TEST:
-        yield SystemState.TESTING;
+      case RESET:
+        yield SystemState.RESETING;
     };
   }
 
@@ -114,21 +119,19 @@ public class Intake extends SubsystemBase {
     switch(systemState){
       case IDLING:
         motorspeed = 0.0;
-        position = 0.0;
         break;
       case INTAKING:
-        position = IntakeConstants.intakingMAXPosition; 
+        position = IntakeConstants.intakingPosition; 
         motorspeed = IntakeConstants.intakingSpeed;
         break;
       case SHOOTING :
         motorspeed = IntakeConstants.shootingPosition;
         break;
       case RETRACTING :
-        motorspeed = IntakeConstants.retractingPos;
+        position = IntakeConstants.retractingPos;
         break;
-      case TESTING:
-        motorspeed = 0.1;
-        position = 5;
+      case RESETING:
+        intakeExtensionMotor.setPosition(0);
         break;
     }
   }

@@ -60,12 +60,12 @@ public final class Constants {
     public static int shooterMotionMagicAccel;
     public static int shooterMotionMagicJerk;
 
-    public static int SupplyCurrentLimit;
-    public static int StatorCurrentLimit;
+    public static int SupplyCurrentLimit = 80;
+    public static int StatorCurrentLimit = 80;
 
-    public static int hoodMotorID;
-    public static int shooterMotor1ID;
-    public static int shooterMotor2ID;
+    public static int hoodMotorID = 53;
+    public static int shooterMotor1ID = 61;
+    public static int shooterMotor2ID = 60;
 
     public static double[] shooterPID = {0, 0, 0};
     public static double[] shooterSVA = {0, 0, 0};
@@ -87,10 +87,10 @@ public final class Constants {
   }
 
   public static class IntakeConstants {
-    public static int intakeMotionMagicExpoK_V;
-    public static int intakeMotionMagicExpoK_A;
-    public static int intakeMotionMagicAccel;
-    public static int intakeMotionMagicJerk;
+    public static double intakeMotionMagicExpoK_V = 0.13;
+    public static double intakeMotionMagicExpoK_A = 0.1;
+    public static double intakeMotionMagicAccel;
+    public static double intakeMotionMagicCruiseVel;
 
     public static int SupplyCurrentLimit = 80;
     public static int StatorCurrentLimit = 80;
@@ -99,24 +99,25 @@ public final class Constants {
     public static int intakeExtensionMotorID = 31;
 
     public static double intakingMAXPosition = 10.022461;
+    public static double intakingPosition = 10;
     public static double intakingSpeed = -0.5;
     public static double shootingPosition;
-    public static double retractingPos;
-    public static double[] intakePID = {0, 0, 0};
-    public static double[] intakeSVA = {0, 0.1, 0};
+    public static double retractingPos = 0;
+    public static double[] intakePID = {0.3, 0, 0};
+    public static double[] intakeSVA = {0, 0.13, 0.01};
     public enum IntakeWantedState {
       IDLE,
       INTAKE,
       SHOOT, 
       RETRACT,
-      TEST
+      RESET
     }
     public enum SystemState {
       IDLING,
       INTAKING,
       SHOOTING,
       RETRACTING,
-      TESTING
+      RESETING
     }
   }  
   public static class TurretConstants {
@@ -125,11 +126,11 @@ public final class Constants {
     public static int turretMotionMagicAccel;
     public static int turretMotionMagicJerk;
 
-    public static int SupplyCurrentLimit;
-    public static int StatorCurrentLimit;
+    public static int SupplyCurrentLimit = 80;
+    public static int StatorCurrentLimit = 80;
 
-    public static int turretMotorID;
-    public static int encoderID;
+    public static int turretMotorID = 50;
+    public static int encoderID = 54;
 
     public static int passAimPosition;
     public static int hubAimPosition;
