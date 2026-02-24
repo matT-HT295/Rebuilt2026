@@ -110,16 +110,21 @@ public final class Constants {
       INTAKE,
       SHOOT, 
       RETRACT,
-      RESET
+      RESET,
+      SCORE
     }
     public enum SystemState {
       IDLING,
       INTAKING,
       SHOOTING,
       RETRACTING,
-      RESETING
+      RESETING,
+      SCORING
+      
     }
   }  
+  
+  
   public static class TurretConstants {
     public static int turretMotionMagicExpoK_V;
     public static int turretMotionMagicExpoK_A;
