@@ -45,13 +45,18 @@ public class LEDSubsystem_WPIlib extends SubsystemBase {
   private final Timer timer = new Timer(); // WPILib Timer
   private final Random random = new Random();
   private boolean running_AnimatedPattern = false;
+  private LEDPattern animatedPattern;
+  // Twinkle pattern state variables
   private boolean running_TwinklePattern = false;
   private double twinklePeriod = 0;
   private Color twinkleBaseColor = null;
-  private List<Integer> twinkleIndexes = new ArrayList<>();
-  private LEDPattern animatedPattern;
+  private Color twinkleColor = null;
+  private boolean[] twinkleMask;       // fast lookup instead of List
+  private double[] twinklePhaseOffset; // each LED has independent phase
+    
 
   public LEDSubsystem_WPIlib() {
+    // Buffer and LED initialization
     m_led = new AddressableLED(kPort);
     m_ledbuffer = new AddressableLEDBuffer(kLength);
     // m_left = m_ledbuffer.createView(0, kLength/2 - 1); //Left side of the LED
@@ -62,16 +67,22 @@ public class LEDSubsystem_WPIlib extends SubsystemBase {
     m_led.setData(m_ledbuffer);
     m_led.start();
 
+    // Twinkle Pattern
+    running_AnimatedPattern = false;
+    running_TwinklePattern = false;
+    twinkleBaseColor = null;
+    twinkleColor = null;
+    twinklePeriod = 0;
+    animatedPattern = null;
+
+    twinkleMask = new boolean[kLength];
+    twinklePhaseOffset = new double[kLength];
+
+
     // Set the default command to turn the strip off, otherwise the last colors
     // written by
     // the last command to run will continue to be displayed.
     // Note: Other default patterns could be used instead!
-    running_AnimatedPattern = false;
-    running_TwinklePattern = false;
-    twinkleBaseColor = null;
-    randomizeList();
-    twinklePeriod = 0;
-    animatedPattern = null;
     // setDefaultCommand(LED_Reset().withName("LED_Reset"));
     // setDefaultCommand(runPattern(LEDPattern.solid(Color.kBlack),
     // false).withName("Off"));
@@ -82,8 +93,10 @@ public class LEDSubsystem_WPIlib extends SubsystemBase {
 
   /**
    * Disable LED strip - Terminates all patterns and stops the LED strip.
+   * !! DO NOT USE UNLESS NECESSARY !! - It fully disables LEDs until robot restart.
    */
   public void LED_Disable() {
+    stopTwinkle();
     runPattern(LEDPattern.solid(LightsConstants.GRBColors.get("black")), false);
     m_led.stop();
   }
@@ -92,6 +105,7 @@ public class LEDSubsystem_WPIlib extends SubsystemBase {
    * Resetting LED strip - LES set to solid black.
    */
   public void LED_Reset() {
+    stopTwinkle();
     runPattern(LEDPattern.solid(LightsConstants.GRBColors.get("black")), false);
   }
 
@@ -148,13 +162,18 @@ public class LEDSubsystem_WPIlib extends SubsystemBase {
    * @param period the time of one full cycle in [s]
    */
   public void LED_Twinkle(Color baseColor, Color twinkleColor, double period) {
-    LEDPattern m_breathingPattern = LEDPattern.solid(twinkleColor).breathe(Seconds.of(period));
-    runPattern(m_breathingPattern, true);
-    timer.reset(); // Ensure clean timer state
-    timer.start();
-    twinklePeriod = period;
-    twinkleBaseColor = baseColor;
+    stopTwinkle();
+
+    this.twinkleBaseColor = baseColor;
+    this.twinkleColor = twinkleColor;
+    this.twinklePeriod = period;
+
     running_TwinklePattern = true;
+
+    timer.reset();
+    timer.start();
+
+    randomizeTwinkleLEDs();
   }
 
   /**
@@ -162,47 +181,74 @@ public class LEDSubsystem_WPIlib extends SubsystemBase {
   */
   public void stopTwinkle() {
     running_TwinklePattern = false;
-    twinkleBaseColor = null;
-    twinklePeriod = 0;
-    twinkleIndexes.clear();
+
+    for (int i = 0; i < kLength; i++) {
+      twinkleMask[i] = false;
+      twinklePhaseOffset[i] = 0;
+    }
     timer.stop();
     timer.reset();
   }
 
   @Override
   public void periodic() {
-    // Periodically send the latest LED color data to the LED strip for it to
-    // display
+    boolean anyActive = running_AnimatedPattern || running_TwinklePattern;
+    if (!anyActive) {
+      return; // nothing to update
+    }
 
-    if (running_AnimatedPattern) {
+    // 1) Base pattern (if any)
+    if (running_AnimatedPattern && animatedPattern != null) {
       animatedPattern.applyTo(m_ledbuffer);
-      if (running_TwinklePattern){
-        for (int index=0;index<kLength;index++){
-          if (!twinkleIndexes.contains(index)){
-            m_ledbuffer.setLED(index, twinkleBaseColor);
-          }
-        }
-        if (timer.hasElapsed(twinklePeriod/2)) {
-          randomizeList();
-          // Reset the timer to start counting again
-          timer.reset();
+    }
+
+    // 2) Twinkle overlay (if enabled)
+    if (running_TwinklePattern) {
+      double t = timer.get();
+
+      for (int i = 0; i < kLength; i++) {
+        if (twinkleMask[i]) {
+          double phase = ((t + twinklePhaseOffset[i]) % twinklePeriod) / twinklePeriod;
+          double b = 0.5 + 0.5 * Math.sin(phase * 2 * Math.PI);
+
+          Color c = new Color(
+              twinkleColor.red * b,
+              twinkleColor.green * b,
+              twinkleColor.blue * b
+          );
+          m_ledbuffer.setLED(i, c);
+        } else if (!running_AnimatedPattern) {
+          // Only force base color when there is NO animated pattern underneath
+          m_ledbuffer.setLED(i, twinkleBaseColor);
         }
       }
-      m_led.setData(m_ledbuffer);
+
+      if (t > twinklePeriod * 0.6) {
+        randomizeTwinkleLEDs();
+        timer.reset();
+      }
     }
+
+    // 3) Push buffer to hardware ONCE per loop
+    m_led.setData(m_ledbuffer);
   }
 
   /**
    * Random assignment of LEDs
   */
-  private void randomizeList() {
-    twinkleIndexes.clear();
-    int maxTwinkleLEDs = Math.min(3, kLength);
-    while (twinkleIndexes.size() < maxTwinkleLEDs) {
-        int newNumber = random.nextInt(kLength);
-        if (!twinkleIndexes.contains(newNumber)) {
-            twinkleIndexes.add(newNumber);
-        }
+  private void randomizeTwinkleLEDs() {
+    for (int i = 0; i < kLength; i++) {
+      twinkleMask[i] = false;
+    }
+
+    int max = Math.min(3, kLength);
+
+    for (int i = 0; i < max; i++) {
+      int index = random.nextInt(kLength);
+      twinkleMask[index] = true;
+
+      // random phase so LEDs do not sync
+      twinklePhaseOffset[index] = random.nextDouble() * twinklePeriod;
     }
   }
   /**

@@ -15,6 +15,7 @@ import com.ctre.phoenix6.controls.MotionMagicVelocityVoltage;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.motorcontrol.Talon;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -111,13 +112,19 @@ public class Intake extends SubsystemBase {
         yield SystemState.RETRACTING;
       case RESET:
         yield SystemState.RESETING;
+      case SCORE:
+        yield SystemState.SCORING;
     };
   }
 
     
   private void applyState(){
+    Timer timer = new Timer();
+
     switch(systemState){
       case IDLING:
+        timer.stop();
+        timer.reset();
         motorspeed = 0.0;
         break;
       case INTAKING:
@@ -133,7 +140,16 @@ public class Intake extends SubsystemBase {
       case RESETING:
         intakeExtensionMotor.setPosition(0);
         break;
-    }
+      case SCORING:
+        timer.start();
+        position = IntakeConstants.retractingPos;
+          if(timer.get() % 2 ==0) {
+            if(position == IntakeConstants.retractingPos) {
+              position = IntakeConstants.shootingPosition;
+            } else {
+              position = IntakeConstants.retractingPos;
+          }
+    }}
   }
   
   private void LogValues() {
