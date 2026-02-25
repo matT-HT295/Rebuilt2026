@@ -24,6 +24,8 @@ import frc.robot.commands.Lights.WPIlib.RunPattern;
 import frc.robot.commands.Lights.WPIlib.ScrollPattern;
 import frc.robot.commands.Lights.WPIlib.SetBreathingPattern;
 import frc.robot.commands.Lights.WPIlib.SetSolidColor;
+import frc.robot.commands.Lights.WPIlib.SetTwinklePattern;
+import frc.robot.commands.Lights.WPIlib.ResetLED;
 import frc.robot.commands.Lights.WPIlib.DisableLED;
 import frc.robot.commands.Lights.WPIlib.ReselLED_OLD;
 
@@ -142,6 +144,26 @@ public class RobotContainer {
         new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.IDLE)),
         new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.IDLE))));
 
+    //feeder
+    driver.y()
+      .onTrue(new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.FEEDTEST)))
+      .onFalse(new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.IDLE)));
+    
+    //lights
+    driver.b()
+      .onTrue(new SetTwinklePattern(normalLights, LightsConstants.BRGColors.get("black"), LightsConstants.BRGColors.get("yellow"), 2));
+    driver.a()
+      .onTrue(new ResetLED(normalLights));
+
+    //turret
+    // operator.a()
+      // .onTrue(new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.TEST)))
+      // .onFalse(new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.IDLE)));
+
+    //shooter
+    // operator.b()
+      // .onTrue(new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.TEST)))
+      // .onFalse(new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.IDLE)));
 
     /* UNNEEDED, DELETE */
     // Idle while the robot is disabled. This ensures the configured
