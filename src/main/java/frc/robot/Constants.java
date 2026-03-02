@@ -332,7 +332,7 @@ public final class Constants {
       new Rotation3d(
         0, 
         Units.degreesToRadians(20), 
-        Units.degreesToRadians(45))
+        Units.degreesToRadians(135))
         );
 
     public static Transform3d kRobotToCam3 = new Transform3d(
@@ -343,7 +343,7 @@ public final class Constants {
       new Rotation3d(
         0, 
         Units.degreesToRadians(20), 
-        Units.degreesToRadians(135))
+        Units.degreesToRadians(225))
         );
 
     public static String cameraName = "camera1";

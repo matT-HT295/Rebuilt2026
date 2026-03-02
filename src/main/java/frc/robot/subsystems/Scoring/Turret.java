@@ -110,6 +110,8 @@ public class Turret extends SubsystemBase {
     if (!status.isOK()) {
       System.out.println("Could not apply configs, error code: " + status.toString());
     }
+    turretMotor.setPosition(encoder.getAbsolutePosition().getValue());
+
   }
 
   public void setWantedTurretState(TurretWantedState desiredState) {
@@ -121,11 +123,11 @@ public class Turret extends SubsystemBase {
       case IDLE: 
         yield SystemState.IDLING;
       case AIM:
-        if (drivetrain.isInAllianceZone()) {
+        // if (drivetrain.isInAllianceZone()) {
           yield SystemState.HUB_AIMING;
-        } else {
-          yield SystemState.PASS_AIMING;
-        }
+        // } else {
+        //   yield SystemState.PASS_AIMING;
+        // }
       case TRENCH_PRESET:
         yield SystemState.TRENCH_PRESETTING;
       case HUB_PRESET:
