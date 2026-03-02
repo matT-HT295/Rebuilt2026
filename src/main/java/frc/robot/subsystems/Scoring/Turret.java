@@ -77,12 +77,12 @@ public class Turret extends SubsystemBase {
     turretMotorConfig.CurrentLimits.StatorCurrentLimit = TurretConstants.StatorCurrentLimit;
     
 
-    turretMotorConfig.Feedback.FeedbackRemoteSensorID = 54;
-    // turretMotorConfig.Feedback.FeedbackRemoteSensorID = 50;
+    // turretMotorConfig.Feedback.FeedbackRemoteSensorID = 54;
+    turretMotorConfig.Feedback.FeedbackRemoteSensorID = 50;
     
-    turretMotorConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RemoteCANcoder;
-    // turretMotorConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RotorSensor;
-    // turretMotorConfig.Feedback.SensorToMechanismRatio = gearRatio;
+    // turretMotorConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RemoteCANcoder;
+    turretMotorConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RotorSensor;
+    turretMotorConfig.Feedback.SensorToMechanismRatio = gearRatio;
     turretMotorConfig.ClosedLoopGeneral.ContinuousWrap = false;
     
     //PID CONSTANTS
@@ -154,7 +154,7 @@ public class Turret extends SubsystemBase {
         //calculate robot angle relative to field
         double currentRobotAngle = drivetrain.getTurretPose().getRotation().getDegrees();
         // calculate desired angle of turret relative to hub
-        double angleToHub = Units.radiansToDegrees(Math.atan(drivetrain.getYfromHub() / drivetrain.getXfromHub()));
+        double angleToHub = Units.radiansToDegrees(Math.atan2(drivetrain.getYfromHub(), drivetrain.getXfromHub()));
 
         // calculate desired angle of turret relative to robot
         double desiredTurretAngle = angleToHub - currentRobotAngle;
@@ -179,14 +179,14 @@ public class Turret extends SubsystemBase {
         } else if (desiredTurretAngle > (360*CWLimit) && desiredTurretAngle < (0)) {
           double option1 = convertedTurretAngle;
           double option2 = convertedTurretAngle + 1;
-          double diffToOption1 = Math.abs(turretMotor.getPosition().getValueAsDouble() - option1);
-          double diffToOption2 = Math.abs(turretMotor.getPosition().getValueAsDouble() - option2);
+          double diffToOption1 = Math.abs(currentTurretToRobotAngle - option1);
+          double diffToOption2 = Math.abs(currentTurretToRobotAngle - option2);
           target = diffToOption1 < diffToOption2 ? option1 : option2;
         } else if (desiredTurretAngle < (360*CCWlimit) && desiredTurretAngle > (0)) {
           double option1 = convertedTurretAngle;
           double option2 = convertedTurretAngle - 1;
-          double diffToOption1 = Math.abs(turretMotor.getPosition().getValueAsDouble() - option1);
-          double diffToOption2 = Math.abs(turretMotor.getPosition().getValueAsDouble() - option2);
+          double diffToOption1 = Math.abs(currentTurretToRobotAngle - option1);
+          double diffToOption2 = Math.abs(currentTurretToRobotAngle - option2);
           target = diffToOption1 < diffToOption2 ? option1 : option2;
         }
         
