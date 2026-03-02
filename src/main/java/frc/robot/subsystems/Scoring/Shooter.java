@@ -187,10 +187,6 @@ public class Shooter extends SubsystemBase {
       case IDLING:
         motorspeed = 0.0;
         position = 0.0;
-        if (hoodMotor.getPosition().getValueAsDouble() != 0 && hoodMotor.getSupplyCurrent().getValueAsDouble() >= ShooterConstants.homingThreshold) {
-          hoodMotor.setPosition(0);
-          position = 0;
-        } 
         break;
       case ACTIVE_WAITING:
         motorspeed = ShooterConstants.activeWaitingSpeed;
@@ -220,6 +216,7 @@ public class Shooter extends SubsystemBase {
         } 
         setWantedShooterState(ShooterWantedState.IDLE);
       case TESTING:
+        // change these to find interpolation values
         motorspeed = 62;
         position = 7.5;
         break;

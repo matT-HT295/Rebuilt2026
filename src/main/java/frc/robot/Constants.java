@@ -4,14 +4,9 @@
 
 package frc.robot;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
-import java.util.Vector;
 
 import edu.wpi.first.math.VecBuilder;
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform2d;
@@ -26,9 +21,7 @@ import frc.util.PolynomialRegression;
 // Lights
 import java.util.Map;
 import static edu.wpi.first.units.Units.Meters;
-// import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Distance;
-// import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.util.Color;
 
 /**
@@ -144,8 +137,8 @@ public final class Constants {
     public static int turretMotorID = 50;
     public static int encoderID = 54;
 
-    public static double passAimPosition = .75;
-    public static double hubAimPosition;
+    public static double passAimPosition;
+    public static double hubPresetPosition;
     public static double trenchPresetPosition = .51;
     public static double tolerance = 0.005;
 
@@ -156,7 +149,7 @@ public final class Constants {
       IDLE,
       AIM,
       TRENCH_PRESET,
-      CLOSE_PRESET,
+      HUB_PRESET,
       TEST
       
     }
@@ -165,7 +158,7 @@ public final class Constants {
       PASS_AIMING,
       HUB_AIMING,
       TRENCH_PRESETTING,
-      CLOSE_PRESETTING,
+      HUB_PRESETTING,
       TESTING
     }
   }
@@ -314,10 +307,10 @@ public final class Constants {
         Units.inchesToMeters(-6), 
         new Rotation2d());
 
-    public static Translation2d RED_HUB_POSE =
-      new Translation2d(Units.inchesToMeters(4.62), Units.inchesToMeters(4.03));
     public static Translation2d BLUE_HUB_POSE =
-      new Translation2d(Units.inchesToMeters(11.92), Units.inchesToMeters(4.03));;
+      new Translation2d(4.62, 4.03);
+    public static Translation2d RED_HUB_POSE =
+      new Translation2d(11.92, 4.03);;
 
     public static double bumperToBumper; // inches
 

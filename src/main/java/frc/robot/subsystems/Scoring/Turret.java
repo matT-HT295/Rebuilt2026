@@ -6,6 +6,8 @@ package frc.robot.subsystems.Scoring;
 
 import edu.wpi.first.math.util.Units;
 
+import org.opencv.core.Mat;
+
 import com.ctre.phoenix6.StatusCode;
 import com.ctre.phoenix6.configs.MotionMagicConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
@@ -44,6 +46,7 @@ public class Turret extends SubsystemBase {
   private double position = 0.0;
   private double CCWlimit = 0.85;
   private double CWLimit = -0.85;
+  private double gearRatio = 38.8888888889;
 
   final PositionVoltage mmE_request = new PositionVoltage(0);
 
@@ -72,9 +75,14 @@ public class Turret extends SubsystemBase {
     turretMotorConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
     turretMotorConfig.CurrentLimits.SupplyCurrentLimit = TurretConstants.SupplyCurrentLimit;
     turretMotorConfig.CurrentLimits.StatorCurrentLimit = TurretConstants.StatorCurrentLimit;
+    
 
     turretMotorConfig.Feedback.FeedbackRemoteSensorID = 54;
+    // turretMotorConfig.Feedback.FeedbackRemoteSensorID = 50;
+    
     turretMotorConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RemoteCANcoder;
+    // turretMotorConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RotorSensor;
+    // turretMotorConfig.Feedback.SensorToMechanismRatio = gearRatio;
     turretMotorConfig.ClosedLoopGeneral.ContinuousWrap = false;
     
     //PID CONSTANTS
@@ -120,8 +128,8 @@ public class Turret extends SubsystemBase {
         }
       case TRENCH_PRESET:
         yield SystemState.TRENCH_PRESETTING;
-      case CLOSE_PRESET:
-        yield SystemState.CLOSE_PRESETTING;
+      case HUB_PRESET:
+        yield SystemState.HUB_PRESETTING;
       case TEST:
         yield SystemState.TESTING;
         
@@ -140,22 +148,70 @@ public class Turret extends SubsystemBase {
         position = TurretConstants.passAimPosition;
         break;
       case HUB_AIMING:
+        double target = 0;
         leds.LED_SolidColor(LightsConstants.RBGColors.get("yellow"));
-        double calcTurretAngle = 
-          (-drivetrain.getTurretPose().getRotation().getDegrees() + Units.radiansToDegrees(Math.atan(drivetrain.getYfromHub() / drivetrain.getXfromHub())))/360;
-          SmartDashboard.putNumber("Calculated Turret setpint", calcTurretAngle);
-        if(calcTurretAngle < CWLimit) {
-          calcTurretAngle = calcTurretAngle + 1;
-        } if (calcTurretAngle > CCWlimit) {
-          calcTurretAngle = calcTurretAngle - 1;
-        }
-        SmartDashboard.putNumber("Turret Setpoint with adjustment", calcTurretAngle);
+        double currentTurretToRobotAngle = turretMotor.getPosition().getValueAsDouble();
+        //calculate robot angle relative to field
+        double currentRobotAngle = drivetrain.getTurretPose().getRotation().getDegrees();
+        // calculate desired angle of turret relative to hub
+        double angleToHub = Units.radiansToDegrees(Math.atan(drivetrain.getYfromHub() / drivetrain.getXfromHub()));
 
-        position = calcTurretAngle;
-        //convert to rotations, set limits, 
+        // calculate desired angle of turret relative to robot
+        double desiredTurretAngle = angleToHub - currentRobotAngle;
+        // convert to rotations
+        double convertedTurretAngle = desiredTurretAngle/360;
+
+        // probes
+        SmartDashboard.putNumber("Calculated Turret Wanted Angle", desiredTurretAngle);
+        SmartDashboard.putNumber("Converted Turret Wanted Angle", convertedTurretAngle);
+
+        //adjusting for physical limits
+        // if(convertedTurretAngle < CWLimit) {
+        //   convertedTurretAngle = convertedTurretAngle + 1;
+        // } if (convertedTurretAngle > CCWlimit) {
+        //   convertedTurretAngle = convertedTurretAngle - 1;
+        // }
+        // dealing with wrap OPTION 1
+        if(desiredTurretAngle < (360*CWLimit)) {
+          target = convertedTurretAngle + 1;
+        } else if (desiredTurretAngle > (360*CCWlimit)) {
+          target = convertedTurretAngle - 1;
+        } else if (desiredTurretAngle > (360*CWLimit) && desiredTurretAngle < (0)) {
+          double option1 = convertedTurretAngle;
+          double option2 = convertedTurretAngle + 1;
+          double diffToOption1 = Math.abs(turretMotor.getPosition().getValueAsDouble() - option1);
+          double diffToOption2 = Math.abs(turretMotor.getPosition().getValueAsDouble() - option2);
+          target = diffToOption1 < diffToOption2 ? option1 : option2;
+        } else if (desiredTurretAngle < (360*CCWlimit) && desiredTurretAngle > (0)) {
+          double option1 = convertedTurretAngle;
+          double option2 = convertedTurretAngle - 1;
+          double diffToOption1 = Math.abs(turretMotor.getPosition().getValueAsDouble() - option1);
+          double diffToOption2 = Math.abs(turretMotor.getPosition().getValueAsDouble() - option2);
+          target = diffToOption1 < diffToOption2 ? option1 : option2;
+        }
+        
+        // Dealing with wrap Option 2
+        // compute shortest delta between branches
+        // double delta = currentTurretToRobotAngle - (currentTurretToRobotAngle);
+        // delta = Math.IEEEremainder(delta, 1.0);
+
+        // // now apply
+        // target = currentTurretToRobotAngle + delta;
+
+        // // now enforce mechanical limits with wrap only if truly needed
+        // while (target > CCWlimit) target -= 1.0;
+        // while (target < CWLimit) target += 1.0;
+
+        // probe
+        SmartDashboard.putNumber("Turret Setpoint with adjustment", target);
+
+        position = target;
         break;
       case TRENCH_PRESETTING:
         position = TurretConstants.trenchPresetPosition;
+        break;
+      case HUB_PRESETTING:
+        position = TurretConstants.hubPresetPosition;
         break;
       case TESTING:
         position = .75;

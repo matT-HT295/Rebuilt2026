@@ -100,9 +100,9 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     public double getXfromHub() {
         double xDistance;
         if(allianceColor == Alliance.Red) {
-            xDistance = Math.abs(VisionConstants.RED_HUB_POSE.getX() - getPose().getX());
+            xDistance = Math.abs(VisionConstants.RED_HUB_POSE.getX() - getTurretPose().getX());
         } else {
-            xDistance = Math.abs(VisionConstants.BLUE_HUB_POSE.getX() - getPose().getX());
+            xDistance = Math.abs(VisionConstants.BLUE_HUB_POSE.getX() - getTurretPose().getX());
         }
         return xDistance;
     }
@@ -110,9 +110,9 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     public double getYfromHub() {
         double yDistance;
         if(allianceColor == Alliance.Red) {
-            yDistance = VisionConstants.RED_HUB_POSE.getY() - getPose().getY();
+            yDistance = VisionConstants.RED_HUB_POSE.getY() - getTurretPose().getY();
         } else {
-            yDistance = VisionConstants.BLUE_HUB_POSE.getY() - getPose().getY();
+            yDistance = VisionConstants.BLUE_HUB_POSE.getY() - getTurretPose().getY();
         }
         return yDistance;
     }

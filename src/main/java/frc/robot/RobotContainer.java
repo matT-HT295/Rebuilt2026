@@ -10,8 +10,6 @@ import frc.robot.Constants.FeederConstants.FeederWantedState;
 import frc.robot.Constants.IntakeConstants.IntakeWantedState;
 import frc.robot.Constants.ShooterConstants.ShooterWantedState;
 import frc.robot.Constants.TurretConstants.TurretWantedState;
-import frc.robot.commands.Autos;
-import frc.robot.commands.ExampleCommand;
 import frc.robot.subsystems.Scoring.Shooter;
 import frc.robot.subsystems.Scoring.Turret;
 import frc.robot.subsystems.Drive.CommandSwerveDrivetrain;
@@ -44,7 +42,6 @@ import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
@@ -90,18 +87,10 @@ public class RobotContainer {
                         .withDeadband(MaxSpeed * 0.1).withRotationalDeadband(MaxAngularRate * 0.1)
                         .withDriveRequestType(DriveRequestType.OpenLoopVoltage); // Use open-loop control for drive
 
+  private final SwerveRequest.FieldCentricFacingAngle facingAngle = new SwerveRequest.FieldCentricFacingAngle()
+                        .withDeadband(MaxSpeed * 0.1).withRotationalDeadband(MaxAngularRate * 0.1)
+                        .withDriveRequestType(DriveRequestType.OpenLoopVoltage);
 
-  // private final SwerveRequest.RobotCentricFacingAngle facingAngle = new SwerveRequest.RobotCentricFacingAngle()
-                        // .withDriveRequestType(DriveRequestType.OpenLoopVoltage);
-
-  private double brake(boolean braking){
-    if(braking) {
-      return .5;
-    } else {
-      return 1.0;
-    }
-  }
-        
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
     // Configure the trigger bindings
@@ -121,45 +110,42 @@ public class RobotContainer {
   private void configureBindings() {
     drivetrain.registerTelemetry(logger::telemeterize);
     
-    /* DRIVER CONTROLS */
-    // drivetrain.setDefaultCommand(
-    //     // Drivetrain will execute this command periodically
-    //     drivetrain.applyRequest(() ->
-    //         drive.withVelocityX(-driver.getLeftY() * MaxSpeed * (-driver.getRightTriggerAxis() + 1)) // Drive forward with negative Y (forward)
-    //             .withVelocityY(-driver.getLeftX() * MaxSpeed * (-driver.getRightTriggerAxis() + 1)) // Drive left with negative X (left)
-    //             .withRotationalRate(-driver.getRightX() * MaxAngularRate * (-driver.getRightTriggerAxis() + 1)) // Drive counterclockwise with negative X (left)
-    //     )
-    // );
-
-    // drivetrain.setDefaultCommand(
-    //     // Drivetrain will execute this command periodically
-    //     drivetrain.applyRequest(() ->
-    //         drive.withVelocityX(-driver.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
-    //             .withVelocityY(-driver.getLeftX() * MaxSpeed) // Drive left with negative X (left)
-    //             .withRotationalRate(-driver.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
-    //     )
-    // );
-
-    //Try this
     drivetrain.setDefaultCommand(
         // Drivetrain will execute this command periodically
         drivetrain.applyRequest(() -> {
-            boolean slowMode = driver.rightBumper().getAsBoolean();
-            double brakingFactor = slowMode ? 1.0 : 1.0;
 
-            return drive.withVelocityX(-driver.getLeftY() * MaxSpeed * brakingFactor) // Drive forward with negative Y (forward)
-                .withVelocityY(-driver.getLeftX() * MaxSpeed * brakingFactor) // Drive left with negative X (left)
-                .withRotationalRate(-driver.getRightX() * MaxAngularRate * brakingFactor); // Drive counterclockwise with negative X (left)
+            return drive.withVelocityX(-driver.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
+                .withVelocityY(-driver.getLeftX() * MaxSpeed ) // Drive left with negative X (left)
+                .withRotationalRate(-driver.getRightX() * MaxAngularRate); // Drive counterclockwise with negative X (left)
   })
     );
     //gyro reset
     driver.start().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
     
     //Snap Buttons
-    // driver.y().whileTrue(drivetrain.applyRequest(() -> facingAngle.withTargetDirection(Rotation2d.fromDegrees(0))));
-    // driver.x().whileTrue(drivetrain.applyRequest(() -> facingAngle.withTargetDirection(Rotation2d.fromDegrees(90))));
-    // driver.a().whileTrue(drivetrain.applyRequest(() -> facingAngle.withTargetDirection(Rotation2d.fromDegrees(180))));
-    // driver.b().whileTrue(drivetrain.applyRequest(() -> facingAngle.withTargetDirection(Rotation2d.fromDegrees(270))));
+    driver.y().whileTrue(
+      drivetrain.applyRequest(() -> facingAngle
+        .withVelocityX(-driver.getLeftY() * MaxSpeed)
+        .withVelocityY(-driver.getLeftX() * MaxSpeed)
+        .withTargetDirection(Rotation2d.kZero)));
+    
+    driver.x().whileTrue(
+      drivetrain.applyRequest(() -> facingAngle
+        .withVelocityX(-driver.getLeftY() * MaxSpeed)
+        .withVelocityY(-driver.getLeftX() * MaxSpeed)
+        .withTargetDirection(Rotation2d.kCCW_90deg)));
+
+    driver.b().whileTrue(
+      drivetrain.applyRequest(() -> facingAngle
+        .withVelocityX(-driver.getLeftY() * MaxSpeed)
+        .withVelocityY(-driver.getLeftX() * MaxSpeed)
+        .withTargetDirection(Rotation2d.kCW_90deg)));
+
+    driver.a().whileTrue(
+      drivetrain.applyRequest(() -> facingAngle
+        .withVelocityX(-driver.getLeftY() * MaxSpeed)
+        .withVelocityY(-driver.getLeftX() * MaxSpeed)
+        .withTargetDirection(Rotation2d.k180deg)));
 
     // turret.setDefaultCommand(new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.AIM)));
     //intake
@@ -219,9 +205,9 @@ public class RobotContainer {
     //shooting
     operator.a()
       .onTrue(new ParallelCommandGroup(
-        new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.TRENCH_PRESET))))
+        new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.TEST))))
       .onFalse(new ParallelCommandGroup(
-        new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.IDLE))));
+        new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.IDLE))));
 
     operator.rightTrigger()
       .onTrue(new SequentialCommandGroup(
