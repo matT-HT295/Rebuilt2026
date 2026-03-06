@@ -70,7 +70,9 @@ public class RobotContainer {
   private final Shooter shooter = new Shooter(drivetrain);
     private final Feeder feeder = new Feeder(turret, shooter);
   // private final Vision vision = new Vision();
+  private final MatchInformation matchInformation = new MatchInformation(normalLights);
   public SendableChooser<Command> sendableChooser = new SendableChooser<>();
+  
 
 
   // private double MaxSpeed = 1.0 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed

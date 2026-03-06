@@ -20,6 +20,7 @@ import com.ctre.phoenix6.signals.InvertedValue;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -222,15 +223,27 @@ public class Shooter extends SubsystemBase {
             drivetrain.getSOTFTurretAngle().getDistance(drivetrain.getHub()));
         break;
       case PASS_SHOOTING:
-        if(drivetrain.getPose().getY() > 4.03) {
-          motorspeed = ShooterConstants.shooterSpeedInterpolation.getPrediction(
-            Math.hypot(drivetrain.getXfromLocation(new Pose2d(0.5, 7.5, new Rotation2d())), drivetrain.getYfromLocation(new Pose2d(0.5, 7.5, new Rotation2d()))));
-          position = Math.min(ShooterConstants.hoodAngleInterpolation.getPrediction(
-            Math.hypot(drivetrain.getXfromLocation(new Pose2d(0.5, 7.5, new Rotation2d())), drivetrain.getYfromLocation(new Pose2d(0.5, 7.5, new Rotation2d())))), 8);
+        //determine passing spot
+        Translation2d passSpot;
+        if(DriverStation.getAlliance().get() == Alliance.Red) {
+          if(drivetrain.getPose().getY() > 4.03) {
+            passSpot = new Translation2d(15.5, 7);
+          } else {
+            passSpot = new Translation2d(15.5, 1);
+          }
         } else {
-          motorspeed = ShooterConstants.shooterSpeedInterpolation.getPrediction(Math.hypot(drivetrain.getXfromLocation(new Pose2d(0.5, 0.5, new Rotation2d())), drivetrain.getYfromLocation(new Pose2d(0.5, 0.5, new Rotation2d()))));
-          position = Math.min(ShooterConstants.hoodAngleInterpolation.getPrediction(Math.hypot(drivetrain.getXfromLocation(new Pose2d(0.5, 0.5, new Rotation2d())), drivetrain.getYfromLocation(new Pose2d(0.5, 0.5, new Rotation2d())))), 8);
+          if(drivetrain.getPose().getY() > 4.03) {
+            passSpot = new Translation2d(1, 7);
+          } else {
+            passSpot = new Translation2d(1, 1);
+          }
         }
+        // use distance to passing spot for interpolation
+        motorspeed = ShooterConstants.shooterSpeedInterpolation
+          .getPrediction(drivetrain.getSOTFTurretAngle().getDistance(passSpot));
+        
+        position = ShooterConstants.hoodAngleInterpolation
+          .getPrediction(drivetrain.getSOTFTurretAngle().getDistance(passSpot));
         break;
       case HOMING:
         position = -.1;

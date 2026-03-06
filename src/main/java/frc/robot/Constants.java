@@ -355,7 +355,7 @@ public final class Constants {
       new Translation3d(
         -(Units.inchesToMeters(0.643)), 
         Units.inchesToMeters(0.616), 
-        Units.inchesToMeters(17.467)),
+        Units.inchesToMeters(17.467+2.75)),
       new Rotation3d(
         0, 
         Units.degreesToRadians(20), 
@@ -366,7 +366,7 @@ public final class Constants {
       new Translation3d(
         -(Units.inchesToMeters(13.5)), 
         Units.inchesToMeters(0.836),
-        Units.inchesToMeters(9.317)),
+        Units.inchesToMeters(9.317+2.75)),
       new Rotation3d(
         0, 
         Units.degreesToRadians(20), 
@@ -377,7 +377,7 @@ public final class Constants {
       new Translation3d(
         -(Units.inchesToMeters(13.5)), 
         -(Units.inchesToMeters(12.837)),
-        Units.inchesToMeters(9.378)),
+        Units.inchesToMeters(9.378+2.75)),
       new Rotation3d(
         0, 
         Units.degreesToRadians(20), 
@@ -391,7 +391,7 @@ public final class Constants {
     /* standard deviations for vision calculations */
     public static edu.wpi.first.math.Vector<N3> kSingleTagStdDevs = VecBuilder.fill(4, 4, 4);
     public static edu.wpi.first.math.Vector<N3> kMultiTagStdDevs = VecBuilder.fill(1, 1, 1);
-    public static edu.wpi.first.math.Vector<N3> odoStdDEvs = VecBuilder.fill(.2, .2, .2);
+    public static edu.wpi.first.math.Vector<N3> odoStdDEvs = VecBuilder.fill(.2, .2, .05);
     public static double odometryUpdateFrequency = 250;
   }
 }

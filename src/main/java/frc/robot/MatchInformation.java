@@ -1,10 +1,14 @@
 package frc.robot;
 import java.util.Optional;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.LEDPattern;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants.LightsConstants;
+import frc.robot.subsystems.Lights.LEDSubsystem_WPIlib;
 
 public class MatchInformation extends SubsystemBase{
+    LEDSubsystem_WPIlib normalLights;
 
     // Match Phases
     public enum MatchPhase {
@@ -36,6 +40,8 @@ public class MatchInformation extends SubsystemBase{
     public double shiftTimeRemaining;
     public boolean shift1Active;
     public boolean redInactiveFirst;
+    public boolean shouldWarn;
+    public boolean warning;
 
     // Flags
     public boolean endgame;
@@ -47,7 +53,8 @@ public class MatchInformation extends SubsystemBase{
     public double teleopStartTimestamp;
     public double autoStartTimestamp;
 
-    public MatchInformation() {
+    public MatchInformation(LEDSubsystem_WPIlib m_normalLights) {
+        this.normalLights = m_normalLights;
         revertDefaultState();
     }
 
@@ -228,6 +235,34 @@ public class MatchInformation extends SubsystemBase{
             hubActive = true;
             return;
         }
+
+        // determining flashing
+        if (130 > matchTime && matchTime > 125) {
+            shouldWarn = true;
+            warning = true;
+            return;
+        }
+        else if (105 > matchTime && matchTime > 100) {
+            shouldWarn = true;
+            warning = !hubActive;
+        }
+        else if (80 > matchTime && matchTime > 75) {
+            shouldWarn = true;
+            warning = !hubActive;
+        }
+        else if (55 > matchTime && matchTime > 50) {
+            shouldWarn = true;
+            warning = !hubActive;
+        }
+        else if (30 > matchTime && matchTime > 25) {
+            shouldWarn = true;
+            warning = !hubActive;
+        }
+        else {
+            shouldWarn = false;
+            warning = false;
+            return;
+        }
         double cycleElapsed = 130 - matchTime;
         double intoShift = cycleElapsed % 25.0;
         shiftTimeRemaining = 25.0 - intoShift;
@@ -261,5 +296,25 @@ public class MatchInformation extends SubsystemBase{
     @Override
     public void periodic() {
         updateAll();
+        if (shouldWarn) {
+            normalLights.updateBrightness(100);
+            if (warning){
+                normalLights
+                    .LED_Blinking(
+                        LEDPattern.solid(LightsConstants.RBGColors.get("green")), 
+                        0.5, 
+                        0.5);
+            } else {
+                normalLights
+                    .LED_Blinking(
+                        LEDPattern.solid(LightsConstants.RBGColors.get("red")), 
+                        0.5, 
+                        0.5);
+            }
+        } else {
+            if (LEDSubsystem_WPIlib.brightness != LightsConstants.led_brightness){
+                normalLights.updateBrightness(50);
+            }
+        }
     }
 }

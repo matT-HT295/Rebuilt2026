@@ -21,8 +21,11 @@ import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.LEDPattern;
 import edu.wpi.first.wpilibj.LEDPattern.GradientType;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -31,6 +34,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.LightsConstants;
 import frc.robot.Constants.TurretConstants;
 import frc.robot.Constants.TurretConstants.TurretWantedState;
+import frc.robot.Constants.VisionConstants;
 import frc.robot.subsystems.Drive.CommandSwerveDrivetrain;
 import frc.robot.subsystems.Lights.LEDSubsystem_WPIlib;
 import frc.robot.Constants.TurretConstants.SystemState;
@@ -148,18 +152,29 @@ public class Turret extends SubsystemBase {
         position = 0.0;
         break;
       case PASS_AIMING:
-        position = TurretConstants.passAimPosition;
-        break;
-      case HUB_AIMING:
         double target = 0;
-        // leds.LED_Blinking(LEDPattern.gradient(GradientType.kContinuous, Color.kDarkBlue, Color.kAliceBlue), 2, 1);
+        Translation2d passSpot;
+        if(DriverStation.getAlliance().get() == Alliance.Red) {
+          if(drivetrain.getPose().getY() > 4.03) {
+            passSpot = new Translation2d(15.5, 7);
+          } else {
+            passSpot = new Translation2d(15.5, 1);
+          }
+        } else {
+          if(drivetrain.getPose().getY() > 4.03) {
+            passSpot = new Translation2d(1, 7);
+          } else {
+            passSpot = new Translation2d(1, 1);
+          }
+        }
+        leds.LED_ScrollPatternRelative(LEDPattern.gradient(GradientType.kContinuous, Color.kOrange, Color.kYellow), 2.5);
         double currentTurretToRobotAngle = turretMotor.getPosition().getValueAsDouble();
         //calculate robot angle relative to field
         // Rotation2d currentRobotAngle = drivetrain.getTurretPose().getRotation();
         Rotation2d currentRobotAngle = drivetrain.getSOTFTurretAngle().getAngle();
 
         // calculate desired angle of turret relative to hub
-        double angleToHub = (Math.atan2(drivetrain.getYfromHub(), drivetrain.getXfromHub()));
+        double angleToHub = (Math.atan2(passSpot.getY(), passSpot.getX()));
 
         // calculate desired angle of turret relative to robot
         Rotation2d desiredTurretAngle = Rotation2d.fromRadians(angleToHub).minus(currentRobotAngle);
@@ -181,6 +196,38 @@ public class Turret extends SubsystemBase {
         SmartDashboard.putNumber("Turret Setpoint with adjustment", target);
 
         position = target;
+        break;
+      case HUB_AIMING:
+        double target2 = 0;
+        leds.LED_ScrollPatternRelative(LEDPattern.gradient(GradientType.kContinuous, Color.kCadetBlue, Color.kLightGreen), 2.5);
+        double currentTurretToRobotAngle2 = turretMotor.getPosition().getValueAsDouble();
+        //calculate robot angle relative to field
+        // Rotation2d currentRobotAngle = drivetrain.getTurretPose().getRotation();
+        Rotation2d currentRobotAngle2 = drivetrain.getSOTFTurretAngle().getAngle();
+
+        // calculate desired angle of turret relative to hub
+        double angleToHub2 = (Math.atan2(drivetrain.getYfromHub(), drivetrain.getXfromHub()));
+
+        // calculate desired angle of turret relative to robot
+        Rotation2d desiredTurretAngle2 = Rotation2d.fromRadians(angleToHub2).minus(currentRobotAngle2);
+        // convert to rotations
+        double convertedTurretAngle2 = desiredTurretAngle2.getDegrees()/360;
+        
+        // compute shortest delta between branches
+        double delta2 = convertedTurretAngle2 - (currentTurretToRobotAngle2);
+        delta2 = Math.IEEEremainder(delta2, 1.0);
+
+        // now apply
+        target2 = currentTurretToRobotAngle2 + delta2;
+
+        // now enforce mechanical limits with wrap only if truly needed
+        while (target2 > CCWlimit) target2 -= 1.0;
+        while (target2 < CWLimit) target2 += 1.0;
+
+        // probe
+        SmartDashboard.putNumber("Turret Setpoint with adjustment", target2);
+
+        position = target2;
         break;
       case TRENCH_PRESETTING:
         position = TurretConstants.trenchPresetPosition;
