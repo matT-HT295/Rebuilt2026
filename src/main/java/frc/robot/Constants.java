@@ -149,15 +149,16 @@ public final class Constants {
       INTAKE, 
       RETRACT,
       RESET,
-      SCORE
+      SCORE,
+      OUTTAKE
     }
     public enum SystemState {
       IDLING,
       INTAKING,
       RETRACTING,
       RESETING,
-      SCORING
-      
+      SCORING,
+      OUTTAKING
     }
   }  
   

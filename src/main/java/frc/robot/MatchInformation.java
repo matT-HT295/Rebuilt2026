@@ -296,25 +296,22 @@ public class MatchInformation extends SubsystemBase{
     @Override
     public void periodic() {
         updateAll();
+        //  else {
+        //     if (LEDSubsystem_WPIlib.brightness != LightsConstants.led_brightness){
+        //         normalLights.updateBrightness(50);
+        //     }
+        // }
+    }
+    public String warningLight() {
         if (shouldWarn) {
             normalLights.updateBrightness(100);
             if (warning){
-                normalLights
-                    .LED_Blinking(
-                        LEDPattern.solid(LightsConstants.RBGColors.get("green")), 
-                        0.5, 
-                        0.5);
+                return "G";
             } else {
-                normalLights
-                    .LED_Blinking(
-                        LEDPattern.solid(LightsConstants.RBGColors.get("red")), 
-                        0.5, 
-                        0.5);
+                return "R";
             }
         } else {
-            if (LEDSubsystem_WPIlib.brightness != LightsConstants.led_brightness){
-                normalLights.updateBrightness(50);
-            }
+            return "n";
         }
     }
 }

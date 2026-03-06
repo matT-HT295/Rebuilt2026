@@ -112,6 +112,8 @@ public class Intake extends SubsystemBase {
         yield SystemState.RESETING;
       case SCORE:
         yield SystemState.SCORING;
+      case OUTTAKE:
+        yield SystemState.OUTTAKING;
     };
   }
 
@@ -144,6 +146,10 @@ public class Intake extends SubsystemBase {
             position = IntakeConstants.retractingPos;
           }
         }
+        break;
+      case OUTTAKING:
+        motorspeed = -IntakeConstants.intakingSpeed;
+        break;
     }
   }
   

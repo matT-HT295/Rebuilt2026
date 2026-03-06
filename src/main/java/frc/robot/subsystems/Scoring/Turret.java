@@ -167,7 +167,7 @@ public class Turret extends SubsystemBase {
             passSpot = new Translation2d(1, 1);
           }
         }
-        leds.LED_ScrollPatternRelative(LEDPattern.gradient(GradientType.kContinuous, Color.kOrange, Color.kYellow), 2.5);
+        // leds.LED_ScrollPatternRelative(LEDPattern.gradient(GradientType.kContinuous, Color.kOrange, Color.kYellow), 2.5);
         double currentTurretToRobotAngle = turretMotor.getPosition().getValueAsDouble();
         //calculate robot angle relative to field
         // Rotation2d currentRobotAngle = drivetrain.getTurretPose().getRotation();
@@ -199,7 +199,7 @@ public class Turret extends SubsystemBase {
         break;
       case HUB_AIMING:
         double target2 = 0;
-        leds.LED_ScrollPatternRelative(LEDPattern.gradient(GradientType.kContinuous, Color.kCadetBlue, Color.kLightGreen), 2.5);
+        // leds.LED_ScrollPatternRelative(LEDPattern.gradient(GradientType.kContinuous, Color.kCadetBlue, Color.kLightGreen), 2.5);
         double currentTurretToRobotAngle2 = turretMotor.getPosition().getValueAsDouble();
         //calculate robot angle relative to field
         // Rotation2d currentRobotAngle = drivetrain.getTurretPose().getRotation();
@@ -266,6 +266,10 @@ public class Turret extends SubsystemBase {
       turretMotor.getConfigurator().apply(turretMotorConfig);
 
     }
+  }
+
+  public TurretWantedState getState() {
+    return wantedState;
   }
 
   private void logValues() {
