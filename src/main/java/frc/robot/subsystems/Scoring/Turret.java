@@ -171,7 +171,7 @@ public class Turret extends SubsystemBase {
         double currentTurretToRobotAngle = turretMotor.getPosition().getValueAsDouble();
         //calculate robot angle relative to field
         // Rotation2d currentRobotAngle = drivetrain.getTurretPose().getRotation();
-        Rotation2d currentRobotAngle = drivetrain.getSOTFTurretAngle().getAngle();
+        Rotation2d currentRobotAngle = drivetrain.getSOTFTurretAngle("pass").getAngle();
 
         // calculate desired angle of turret relative to hub
         double angleToHub = (Math.atan2(passSpot.getY(), passSpot.getX()));
@@ -203,7 +203,7 @@ public class Turret extends SubsystemBase {
         double currentTurretToRobotAngle2 = turretMotor.getPosition().getValueAsDouble();
         //calculate robot angle relative to field
         // Rotation2d currentRobotAngle = drivetrain.getTurretPose().getRotation();
-        Rotation2d currentRobotAngle2 = drivetrain.getSOTFTurretAngle().getAngle();
+        Rotation2d currentRobotAngle2 = drivetrain.getSOTFTurretAngle("hub").getAngle();
 
         // calculate desired angle of turret relative to hub
         double angleToHub2 = (Math.atan2(drivetrain.getYfromHub(), drivetrain.getXfromHub()));
