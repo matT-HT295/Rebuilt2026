@@ -32,7 +32,7 @@ public class LEDSubsystem_WPIlib extends SubsystemBase {
   private static final int kPort = LightsConstants.led_port; // PWM Port
   private static final int kLength = LightsConstants.led_length; // LED strip length [# of LEDs]
   private static final Distance kLedSpacing = LightsConstants.spacing; // LED strip LEDs density - [... LEDs per meter]
-  private static final int brightness = LightsConstants.led_brightness;
+  public static int brightness = LightsConstants.led_brightness;
   private static final int signal_length = LightsConstants.signal_length; // Length of signal LED sector (last x LEDs)
 
   // BUFFERS
@@ -329,6 +329,10 @@ public class LEDSubsystem_WPIlib extends SubsystemBase {
     return target == LEDTarget.SIDES
         ? m_sidesBuffer
         : m_signalBuffer;
+  }
+
+  public void updateBrightness(int newBrightness) {
+    LEDSubsystem_WPIlib.brightness = newBrightness;
   }
 }
 

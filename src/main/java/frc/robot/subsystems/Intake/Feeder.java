@@ -20,9 +20,13 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.FeederConstants;
 import frc.robot.Constants.FeederConstants.FeederWantedState;
 import frc.robot.Constants.FeederConstants.SystemState;
+import frc.robot.subsystems.Scoring.Shooter;
+import frc.robot.subsystems.Scoring.Turret;
 import frc.util.LoggedTunableNumber;
 
 public class Feeder extends SubsystemBase {
+  private Turret turret;
+  private Shooter shooter;
   /* MOTORS */
   private TalonFX spindexerMotor = new TalonFX(FeederConstants.spindexerMotorID, "rio");
   private TalonFXConfiguration spindexerMotorConfig = new TalonFXConfiguration();
@@ -50,7 +54,9 @@ public class Feeder extends SubsystemBase {
   SystemState systemState = SystemState.IDLING;
 
   /** Creates a new Feeder */
-  public Feeder() {
+  public Feeder(Turret m_turret, Shooter m_shooter) {
+    this.turret = m_turret;
+    this.shooter = m_shooter;
     /* SETUP CONFIG */
     
     // CURRENT LIMITS
@@ -107,8 +113,13 @@ public class Feeder extends SubsystemBase {
         towerMotorSpeed = 0.0;
         break;
       case SHOOTING:
-        spindexerMotorSpeed = FeederConstants.feederShootSpeed;
-        towerMotorSpeed = FeederConstants.feederShootSpeed;
+        if(shooter.shooterIsReady() && turret.turretIsReady()) {
+          spindexerMotorSpeed = FeederConstants.feederShootSpeed;
+          towerMotorSpeed = FeederConstants.feederShootSpeed;
+        } else {
+          spindexerMotorSpeed = 0;
+          towerMotorSpeed = 0;
+        }
         break;
       case FEEDTESTING:
         spindexerMotorSpeed = 0.7;

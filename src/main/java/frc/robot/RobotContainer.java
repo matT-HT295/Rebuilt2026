@@ -31,12 +31,16 @@ import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 
+import java.util.jar.Attributes.Name;
+
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.auto.NamedCommands;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.LEDPattern;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -62,11 +66,13 @@ public class RobotContainer {
   private final LEDSubsystem_WPIlib normalLights = new LEDSubsystem_WPIlib();
   public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
   private final Intake intake = new Intake();
-  private final Feeder feeder = new Feeder();
   private final Turret turret = new Turret(drivetrain, normalLights);
-  private final Shooter shooter = new Shooter();
+  private final Shooter shooter = new Shooter(drivetrain);
+    private final Feeder feeder = new Feeder(turret, shooter);
   // private final Vision vision = new Vision();
+  private final MatchInformation matchInformation = new MatchInformation(normalLights);
   public SendableChooser<Command> sendableChooser = new SendableChooser<>();
+  
 
 
   // private double MaxSpeed = 1.0 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
@@ -88,14 +94,17 @@ public class RobotContainer {
                         .withDriveRequestType(DriveRequestType.OpenLoopVoltage); // Use open-loop control for drive
 
   private final SwerveRequest.FieldCentricFacingAngle facingAngle = new SwerveRequest.FieldCentricFacingAngle()
-                        .withDeadband(MaxSpeed * 0.1).withRotationalDeadband(MaxAngularRate * 0.1)
-                        .withDriveRequestType(DriveRequestType.OpenLoopVoltage);
+                        .withDeadband(MaxSpeed * 0.1)
+                        .withRotationalDeadband(MaxAngularRate * 0.1)
+                        .withDriveRequestType(DriveRequestType.OpenLoopVoltage)
+                        .withHeadingPID(6, 0, 0);
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
     // Configure the trigger bindings
     configureBindings();
     configureAutoCommands();
+    configureNamedCommands();
   }
 
   /**
@@ -146,8 +155,7 @@ public class RobotContainer {
         .withVelocityX(-driver.getLeftY() * MaxSpeed)
         .withVelocityY(-driver.getLeftX() * MaxSpeed)
         .withTargetDirection(Rotation2d.k180deg)));
-
-    // turret.setDefaultCommand(new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.AIM)));
+    
     //intake
     driver.rightBumper()
       .onTrue(new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.INTAKE)))
@@ -173,7 +181,7 @@ public class RobotContainer {
       .onTrue(new SequentialCommandGroup(
         new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.TRENCH_SHOOT)),
         new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.TRENCH_PRESET)),
-        waitForShooter(),
+        // waitToShoot(),
         new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.SHOOT))))
       .onFalse(new ParallelCommandGroup(
         new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.IDLE)),
@@ -185,49 +193,77 @@ public class RobotContainer {
         new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.RETRACT)))))
       .onFalse((new ParallelCommandGroup(
         new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.INTAKE)))));
-
-
-    /* TESTING BUTTONS */
-    //turret
-    operator.x()
-      .onTrue(new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.AIM)))
-      .onFalse(new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.IDLE)));
-    operator.b()
+    // shooting
+    operator.rightTrigger()
       .onTrue(new SequentialCommandGroup(
-        new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.TRENCH_SHOOT)),
-        new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.TRENCH_PRESET)),
-        waitForShooter(),
-        new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.SHOOT))))
+          new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.HUB_SHOOT)),
+          new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.AIM_HUB)),
+          // waitToShoot(),
+          new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.SHOOT)))
+      )
       .onFalse(new ParallelCommandGroup(
         new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.IDLE)),
         new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.IDLE)),
         new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.IDLE))));
-    
-    // shooting
-    operator.a()
+    // passing
+    operator.rightBumper()
       .onTrue(new SequentialCommandGroup(
-          new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.TEST)),
-          waitForShooter(),
-          new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.FEEDTEST))
+          new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.PASS_SHOOT)),
+          new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.AIM_PASS)),
+          // waitToShoot(),
+          new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.SHOOT))
       ))
       .onFalse(new ParallelCommandGroup(
-          new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.IDLE)),
-          new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.IDLE))
-      ));
-
-    operator.rightTrigger()
-      .onTrue(new SequentialCommandGroup(
-        new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.FEEDTEST))))
-      .onFalse(new SequentialCommandGroup(
+        new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.IDLE)),
+        new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.IDLE)),
         new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.IDLE))));
 
-    //feeder
+
+
+    /* TESTING BUTTONS */
+    //turret
+    // operator.x()
+    //   .onTrue(new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.AIM_HUB)))
+    //   .onFalse(new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.IDLE)));
+    // operator.b()
+    //   .onTrue(new SequentialCommandGroup(
+    //     new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.TRENCH_SHOOT)),
+    //     new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.TRENCH_PRESET)),
+    //     waitToShoot(),
+    //     new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.SHOOT))))
+    //   .onFalse(new ParallelCommandGroup(
+    //     new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.IDLE)),
+    //     new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.IDLE)),
+    //     new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.IDLE))));
     
-    //lights
-    operator.povUp()
-      .onTrue(new SetBreathingPattern(normalLights, LEDSubsystem_WPIlib.LEDTarget.SIDES, LEDPattern.rainbow(255, 150), 3));
-    operator.povDown()
-      .onTrue(new ResetLED(normalLights));
+    // 
+    // operator.a()
+    //   .onTrue(new SequentialCommandGroup(
+    //       new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.HUB_SHOOT)),
+    //       waitToShoot(),
+    //       new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.SHOOT))
+    //   ))
+    //   .onFalse(new ParallelCommandGroup(
+    //       new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.IDLE)),
+    //       new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.IDLE))
+    //   ));
+
+    // operator.rightTrigger()
+    //   .onTrue(new SequentialCommandGroup(
+    //     new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.TEST)),
+    //       waitToShoot(),
+    //       new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.SHOOT))))
+    //   .onFalse(new SequentialCommandGroup(
+    //     new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.IDLE)),
+    //       new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.IDLE))));
+
+    // //feeder
+    
+    // //lights
+    // operator.povUp()
+    //   .onTrue(new SetBreathingPattern(normalLights, LEDPattern.rainbow(255, 150), 3));
+    // operator.povDown()
+    //   .onTrue(new ResetLED(normalLights));
 
     /* UNNEEDED, DELETE */
     // Idle while the robot is disabled. This ensures the configured
@@ -254,13 +290,51 @@ public class RobotContainer {
     return sendableChooser.getSelected();
   }
 
-  public Command waitForShooter() {
-    return Commands.waitUntil(() -> shooter.shooterIsReady());
+  public Command waitToShoot() {
+    return Commands.waitUntil(() -> (shooter.shooterIsReady() && turret.turretIsReady()));
+  }
+
+  public boolean PLSwaitToShoot() {
+    return  (shooter.shooterIsReady() && turret.turretIsReady());
   }
 
   public void configureAutoCommands() {
     sendableChooser = AutoBuilder.buildAutoChooser();
     SmartDashboard.putData("autos", sendableChooser);
   }
+
+  public Command wait(double seconds) {
+    return Commands.waitSeconds(seconds);
+  }
+
+  public void configureNamedCommands() {
+    NamedCommands.registerCommand("Shooter On", 
+      new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.TURN_ON_AUTO)));
+
+    NamedCommands.registerCommand("Retract Hood", 
+      new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.RETRACT_AUTO)));
+
+    NamedCommands.registerCommand("Auto Trench Shoot", 
+      new SequentialCommandGroup(
+        new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.TRENCH_SHOOT)),
+        new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.TRENCH_PRESET)),
+        waitToShoot(),
+        new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.SHOOT)),
+        wait(1.5),
+        new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.RETRACT))).withTimeout(3));
+
+    NamedCommands.registerCommand("Aim Shoot", 
+      new SequentialCommandGroup(
+        new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.HUB_SHOOT)),
+        new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.AIM_HUB)),
+        waitToShoot(),
+        new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.SHOOT)),
+        wait(1.5),
+        new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.RETRACT))));
+
+    NamedCommands.registerCommand("Intake", 
+      new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.INTAKE)));
+  }
+    
 
 }

@@ -151,6 +151,109 @@ public class Vision {
         return combinedEstimate;
     }
 
+    public Pose2d getPoseFromCams12() {
+        var visionEst = getEstimatedGlobalPose1();
+        var visionEst2 = getEstimatedGlobalPose2();
+        Pose2d combinedEstimate = new Pose2d();
+
+        if (visionEst.isPresent() && visionEst2.isPresent()) {
+            Pose2d poseFrom1 = visionEst.get().estimatedPose.toPose2d();
+            Pose2d poseFrom2 = visionEst2.get().estimatedPose.toPose2d();
+
+            double estXFrom1 = poseFrom1.getX();
+            double estXFrom2 = poseFrom2.getX();
+
+            double estYFrom1 = poseFrom1.getY();
+            double estYFrom2 = poseFrom2.getY();
+
+            double estCOSFrom1 = poseFrom1.getRotation().getCos();
+            double estCOSFrom2 = poseFrom2.getRotation().getCos();
+
+            double estSINFrom1 = poseFrom1.getRotation().getSin();
+            double estSINFrom2 = poseFrom2.getRotation().getSin();
+
+            double avgX = (estXFrom1 + estXFrom2 ) / 3;
+            double avgY = (estYFrom1 + estYFrom2 ) / 3;
+
+            double avgCos = (estCOSFrom1 + estCOSFrom2) / 3;
+            double avgSin = (estSINFrom1 + estSINFrom2) / 3;
+
+            combinedEstimate = new Pose2d(avgX, avgY, new Rotation2d(avgCos, avgSin));
+
+        } else {
+            combinedEstimate = new Pose2d();
+        }
+        return combinedEstimate;
+    }
+
+    public Pose2d getPoseFromCams23() {
+        var visionEst2 = getEstimatedGlobalPose2();
+        var visionEst3 = getEstimatedGlobalPose3();
+        Pose2d combinedEstimate = new Pose2d();
+
+        if ( visionEst2.isPresent() && visionEst3.isPresent()) {
+            Pose2d poseFrom2 = visionEst2.get().estimatedPose.toPose2d();
+            Pose2d poseFrom3 = visionEst3.get().estimatedPose.toPose2d();
+
+            double estXFrom2 = poseFrom2.getX();
+            double estXFrom3 = poseFrom3.getX();
+
+            double estYFrom2 = poseFrom2.getY();
+            double estYFrom3 = poseFrom3.getY();
+
+            double estCOSFrom2 = poseFrom2.getRotation().getCos();
+            double estCOSFrom3 = poseFrom3.getRotation().getCos();
+
+            double estSINFrom2 = poseFrom2.getRotation().getSin();
+            double estSINFrom3 = poseFrom3.getRotation().getSin();
+
+            double avgX = ( estXFrom2 + estXFrom3) / 3;
+            double avgY = ( estYFrom2 + estYFrom3) / 3;
+
+            double avgCos = ( estCOSFrom2 + estCOSFrom3) / 3;
+            double avgSin = ( estSINFrom2 + estSINFrom3) / 3;
+
+            combinedEstimate = new Pose2d(avgX, avgY, new Rotation2d(avgCos, avgSin));
+        } else {
+            combinedEstimate = new Pose2d();
+        }
+        return combinedEstimate;
+    }
+
+    public Pose2d getPoseFromCams13() {
+        var visionEst = getEstimatedGlobalPose1();
+        var visionEst3 = getEstimatedGlobalPose3();
+        Pose2d combinedEstimate = new Pose2d();
+
+        if (visionEst.isPresent() && visionEst3.isPresent()) {
+            Pose2d poseFrom1 = visionEst.get().estimatedPose.toPose2d();
+            Pose2d poseFrom3 = visionEst3.get().estimatedPose.toPose2d();
+
+            double estXFrom1 = poseFrom1.getX();
+            double estXFrom3 = poseFrom3.getX();
+
+            double estYFrom1 = poseFrom1.getY();
+            double estYFrom3 = poseFrom3.getY();
+
+            double estCOSFrom1 = poseFrom1.getRotation().getCos();
+            double estCOSFrom3 = poseFrom3.getRotation().getCos();
+
+            double estSINFrom1 = poseFrom1.getRotation().getSin();
+            double estSINFrom3 = poseFrom3.getRotation().getSin();
+
+            double avgX = (estXFrom1  + estXFrom3) / 3;
+            double avgY = (estYFrom1  + estYFrom3) / 3;
+
+            double avgCos = (estCOSFrom1 + estCOSFrom3) / 3;
+            double avgSin = (estSINFrom1 + estSINFrom3) / 3;
+
+            combinedEstimate = new Pose2d(avgX, avgY, new Rotation2d(avgCos, avgSin));
+        } else {
+            combinedEstimate = new Pose2d();
+        }
+        return combinedEstimate;
+    }
+
     public Matrix<N3, N1> getEstimationStdDevs(Pose2d estimatedPose) {
         var estStdDevs = Constants.VisionConstants.kSingleTagStdDevs;
         var targets1 = getLatestResult1().getTargets();

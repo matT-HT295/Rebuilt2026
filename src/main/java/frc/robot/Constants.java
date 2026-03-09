@@ -17,7 +17,11 @@ import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import frc.util.Point;
 import frc.util.PolynomialRegression;
+
+import java.util.Arrays;
+import java.util.List;
 // Lights
 import java.util.Map;
 import static edu.wpi.first.units.Units.Meters;
@@ -43,8 +47,37 @@ public final class Constants {
   public static class ShooterConstants {
     public static double activeWaitingSpeed;
     public static double inactiveWaitingSpeed;
-    public static PolynomialRegression hoodAngleInterpolation;
-    public static PolynomialRegression shooterSpeedInterpolation;
+    public static PolynomialRegression hoodAngleInterpolation = 
+    new PolynomialRegression(
+      Arrays.asList(
+        new Point(2, 0),
+        new Point(3, 3),
+        new Point(4, 5.5),
+        new Point(5, 6.3),
+        new Point(6, 7.5)
+      ),
+       2);
+    
+    public static PolynomialRegression shooterSpeedInterpolation = 
+    new PolynomialRegression(
+      Arrays.asList(
+        new Point(2, 47),
+        new Point(3, 50),
+        new Point(4, 50),
+        new Point(5, 55),
+        new Point(6, 62)
+      ),
+       2);
+    public static PolynomialRegression timeOfFlightInterpolation = 
+    new PolynomialRegression(
+      Arrays.asList(
+        new Point(2, .975),
+        new Point(3, 1.125),
+        new Point(4, 1.175),
+        new Point(5, 1.18),
+        new Point(6, 1.28)
+      ),
+       2);
     public static double distanceToHub;
     public static double passDistance;
 
@@ -74,7 +107,9 @@ public final class Constants {
       PASS_SHOOT,
       HUB_SHOOT,
       HOME,
-      TEST
+      TEST,
+      RETRACT_AUTO,
+      TURN_ON_AUTO
     }
     public enum SystemState {
       IDLING,
@@ -84,7 +119,9 @@ public final class Constants {
       PASS_SHOOTING,
       HUB_SHOOTING,
       HOMING,
-      TESTING
+      TESTING,
+      RETRACTING_AUTO,
+      TURNING_ON_AUTO
     }
   }
 
@@ -137,17 +174,18 @@ public final class Constants {
     public static int turretMotorID = 50;
     public static int encoderID = 54;
 
-    public static double passAimPosition;
+    public static double passAimPosition = 0;
     public static double hubPresetPosition;
     public static double trenchPresetPosition = .51;
-    public static double tolerance = 0.005;
+    public static double tolerance = 0.007;
 
-    public static double[] turretPID = {40, 0, 0};
+    public static double[] turretPID = {51, 0, 0};
     public static double[] turretSVA = {0, 0, 0};
 
     public enum TurretWantedState {
       IDLE,
-      AIM,
+      AIM_PASS,
+      AIM_HUB,
       TRENCH_PRESET,
       HUB_PRESET,
       TEST
@@ -307,9 +345,9 @@ public final class Constants {
         new Rotation2d());
 
     public static Translation2d BLUE_HUB_POSE =
-      new Translation2d(4.62, 4.03);
+      new Translation2d(4.62, 3.53); //was 4.03
     public static Translation2d RED_HUB_POSE =
-      new Translation2d(11.92, 4.03);;
+      new Translation2d(11.92, 3.53); //was 4.03
 
     public static double bumperToBumper; // inches
 
@@ -317,18 +355,18 @@ public final class Constants {
       new Translation3d(
         -(Units.inchesToMeters(0.643)), 
         Units.inchesToMeters(0.616), 
-        Units.inchesToMeters(17.467)),
+        Units.inchesToMeters(17.467+2.75)),
       new Rotation3d(
         0, 
-        Units.degreesToRadians(23), 
+        Units.degreesToRadians(20), 
         0)
       );
 
     public static Transform3d kRobotToCam2 = new Transform3d(
       new Translation3d(
-        -(Units.inchesToMeters(12.889)), 
+        -(Units.inchesToMeters(13.5)), 
         Units.inchesToMeters(0.836),
-        Units.inchesToMeters(9.317)),
+        Units.inchesToMeters(9.317+2.75)),
       new Rotation3d(
         0, 
         Units.degreesToRadians(20), 
@@ -337,9 +375,9 @@ public final class Constants {
 
     public static Transform3d kRobotToCam3 = new Transform3d(
       new Translation3d(
-        -(Units.inchesToMeters(12.888)), 
+        -(Units.inchesToMeters(13.5)), 
         -(Units.inchesToMeters(12.837)),
-        Units.inchesToMeters(9.378)),
+        Units.inchesToMeters(9.378+2.75)),
       new Rotation3d(
         0, 
         Units.degreesToRadians(20), 
@@ -351,9 +389,9 @@ public final class Constants {
     public static String camera3Name = "camera3";
 
     /* standard deviations for vision calculations */
-    public static edu.wpi.first.math.Vector<N3> kSingleTagStdDevs = VecBuilder.fill(2, 2, 2);
+    public static edu.wpi.first.math.Vector<N3> kSingleTagStdDevs = VecBuilder.fill(4, 4, 4);
     public static edu.wpi.first.math.Vector<N3> kMultiTagStdDevs = VecBuilder.fill(1, 1, 1);
-    public static edu.wpi.first.math.Vector<N3> odoStdDEvs = VecBuilder.fill(.2, .2, .2);
+    public static edu.wpi.first.math.Vector<N3> odoStdDEvs = VecBuilder.fill(.2, .2, .05);
     public static double odometryUpdateFrequency = 250;
   }
 }

@@ -18,17 +18,24 @@ import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.Constants.ShooterConstants;
+import frc.robot.Constants.VisionConstants;
 import frc.robot.Constants.ShooterConstants.ShooterWantedState;
 import frc.robot.Constants.ShooterConstants.SystemState;
+import frc.robot.subsystems.Drive.CommandSwerveDrivetrain;
 import frc.util.LoggedTunableNumber;
 
 public class Shooter extends SubsystemBase {
+  private CommandSwerveDrivetrain drivetrain;
+
   /* MOTORS */
   private TalonFX hoodMotor = new TalonFX(ShooterConstants.hoodMotorID, CANBus.roboRIO());
   private TalonFXConfiguration hoodMotorConfig = new TalonFXConfiguration();
@@ -59,7 +66,8 @@ public class Shooter extends SubsystemBase {
   SystemState systemState = SystemState.IDLING;
 
   /** Creates a new Shooter */
-  public Shooter() {
+  public Shooter(CommandSwerveDrivetrain m_drivetrain) {
+    this.drivetrain = m_drivetrain;
     /* SETUP CONFIG */
     
     // CURRENT LIMITS
@@ -140,6 +148,7 @@ public class Shooter extends SubsystemBase {
     if (!shooterMotor2Status.isOK()) {
       System.out.println("Could not apply configs, error code: " + shooterMotor2Status.toString() + shooterMotor2.getDeviceID());
     }
+    hoodMotor.setPosition(0);
   }
 
   public void setWantedShooterState(ShooterWantedState desiredState) {
@@ -152,22 +161,23 @@ public class Shooter extends SubsystemBase {
       case IDLE:
         yield SystemState.IDLING;
       case WAIT:
-        if(DriverStation.getGameSpecificMessage() == getAlliance()){
-          if((DriverStation.getMatchTime() <= 105 && DriverStation.getMatchTime() > 80) || (DriverStation.getMatchTime() <= 55 && DriverStation.getMatchTime() > 30)){
-            yield SystemState.ACTIVE_WAITING;
-          }
-          if((DriverStation.getMatchTime() <= 130 && DriverStation.getMatchTime() > 105) || (DriverStation.getMatchTime() <= 80 && DriverStation.getMatchTime() > 55)){
-            yield SystemState.INACTIVE_WAITING;
-          }
-        }
-        else{
-          if((DriverStation.getMatchTime() <= 130 && DriverStation.getMatchTime() > 105) || (DriverStation.getMatchTime() <= 80 && DriverStation.getMatchTime() > 55)){
-            yield SystemState.ACTIVE_WAITING;
-          }
-          if((DriverStation.getMatchTime() <= 105 && DriverStation.getMatchTime() > 80) || (DriverStation.getMatchTime() <= 55 && DriverStation.getMatchTime() > 30)){
-            yield SystemState.INACTIVE_WAITING;
-          }
-        }
+        yield SystemState.ACTIVE_WAITING;
+        // if(DriverStation.getGameSpecificMessage() == getAlliance()){
+        //   if((DriverStation.getMatchTime() <= 105 && DriverStation.getMatchTime() > 80) || (DriverStation.getMatchTime() <= 55 && DriverStation.getMatchTime() > 30)){
+        //     yield SystemState.ACTIVE_WAITING;
+        //   }
+        //   if((DriverStation.getMatchTime() <= 130 && DriverStation.getMatchTime() > 105) || (DriverStation.getMatchTime() <= 80 && DriverStation.getMatchTime() > 55)){
+        //     yield SystemState.INACTIVE_WAITING;
+        //   }
+        // }
+        // else{
+        //   if((DriverStation.getMatchTime() <= 130 && DriverStation.getMatchTime() > 105) || (DriverStation.getMatchTime() <= 80 && DriverStation.getMatchTime() > 55)){
+        //     yield SystemState.ACTIVE_WAITING;
+        //   }
+        //   if((DriverStation.getMatchTime() <= 105 && DriverStation.getMatchTime() > 80) || (DriverStation.getMatchTime() <= 55 && DriverStation.getMatchTime() > 30)){
+        //     yield SystemState.INACTIVE_WAITING;
+        //   }
+        // }
       case TRENCH_SHOOT:
         yield systemState.TRENCH_SHOOTING;
       case PASS_SHOOT:
@@ -178,6 +188,10 @@ public class Shooter extends SubsystemBase {
         yield SystemState.HOMING;
       case TEST:
         yield SystemState.TESTING;
+      case RETRACT_AUTO:
+        yield SystemState.RETRACTING_AUTO;
+      case TURN_ON_AUTO:
+        yield SystemState.TURNING_ON_AUTO;
     };
   }
 
@@ -201,12 +215,35 @@ public class Shooter extends SubsystemBase {
         position = 5.5;
         break;
       case HUB_SHOOTING:
-        motorspeed = ShooterConstants.shooterSpeedInterpolation.getPrediction(ShooterConstants.distanceToHub);
-        position = ShooterConstants.hoodAngleInterpolation.getPrediction(ShooterConstants.distanceToHub);
+        motorspeed = ShooterConstants.shooterSpeedInterpolation
+          .getPrediction(
+            drivetrain.getSOTFTurretAngle().getDistance(drivetrain.getHub()));
+        position = ShooterConstants.hoodAngleInterpolation
+          .getPrediction(
+            drivetrain.getSOTFTurretAngle().getDistance(drivetrain.getHub()));
         break;
       case PASS_SHOOTING:
-        motorspeed = ShooterConstants.shooterSpeedInterpolation.getPrediction(ShooterConstants.passDistance);
-        position = ShooterConstants.hoodAngleInterpolation.getPrediction(ShooterConstants.passDistance);
+        //determine passing spot
+        Translation2d passSpot;
+        if(DriverStation.getAlliance().get() == Alliance.Red) {
+          if(drivetrain.getPose().getY() > 4.03) {
+            passSpot = new Translation2d(15.5, 7);
+          } else {
+            passSpot = new Translation2d(15.5, 1);
+          }
+        } else {
+          if(drivetrain.getPose().getY() > 4.03) {
+            passSpot = new Translation2d(1, 7);
+          } else {
+            passSpot = new Translation2d(1, 1);
+          }
+        }
+        // use distance to passing spot for interpolation
+        motorspeed = ShooterConstants.shooterSpeedInterpolation
+          .getPrediction(drivetrain.getSOTFTurretAngle().getDistance(passSpot));
+        
+        position = ShooterConstants.hoodAngleInterpolation
+          .getPrediction(drivetrain.getSOTFTurretAngle().getDistance(passSpot));
         break;
       case HOMING:
         position = -.1;
@@ -215,11 +252,16 @@ public class Shooter extends SubsystemBase {
           position = 0;
         } 
         setWantedShooterState(ShooterWantedState.IDLE);
+        break;
       case TESTING:
         // change these to find interpolation values
-        motorspeed = 55;
-        position = 6.3;
+        motorspeed = 45;
+        position = 3;
         break;
+      case RETRACTING_AUTO:
+        position = 0;
+      case TURNING_ON_AUTO:
+        motorspeed = 50;
     }
   } 
 
@@ -267,7 +309,7 @@ public class Shooter extends SubsystemBase {
   private void logValues() {
     SmartDashboard.putNumber("Shooter Actual Speed", shooterMotor1.getVelocity().getValueAsDouble());
     // SmartDashboard.putNumber("Hood Wanted Position", position);
-    // SmartDashboard.putNumber("Hood Actual Position", hoodMotor.getPosition().getValueAsDouble());
+    SmartDashboard.putNumber("Hood Actual Position", hoodMotor.getPosition().getValueAsDouble());
     SmartDashboard.putNumber("Shooter Wanted Speed", motorspeed);
     SmartDashboard.putNumber("Hood Motor Current", hoodMotor.getSupplyCurrent().getValueAsDouble());
     SmartDashboard.putString("SHOOTER WANTED STATE", wantedState.toString());
