@@ -6,12 +6,14 @@ import edu.wpi.first.wpilibj.util.Color;
 
 public class SetTwinklePattern extends Command {
     private final LEDSubsystem_WPIlib ledSubsystem;
+    private final LEDSubsystem_WPIlib.LEDTarget target;
     private final Color baseColor;
     private final Color twinkleColor;
     private final double period;
 
-    public SetTwinklePattern(LEDSubsystem_WPIlib subsystem, Color baseColor, Color twinkleColor, double period) {
+    public SetTwinklePattern(LEDSubsystem_WPIlib subsystem, LEDSubsystem_WPIlib.LEDTarget target, Color baseColor, Color twinkleColor, double period) {
         this.ledSubsystem = subsystem;
+        this.target = target;
         this.baseColor = baseColor;
         this.twinkleColor = twinkleColor;
         this.period = period;
@@ -20,7 +22,7 @@ public class SetTwinklePattern extends Command {
 
     @Override
     public void initialize() {
-        ledSubsystem.LED_Twinkle(baseColor, twinkleColor, period);
+        ledSubsystem.LED_Twinkle(target, baseColor, twinkleColor, period);
     }
 
     @Override

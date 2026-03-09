@@ -217,33 +217,35 @@ public class Shooter extends SubsystemBase {
       case HUB_SHOOTING:
         motorspeed = ShooterConstants.shooterSpeedInterpolation
           .getPrediction(
-            drivetrain.getSOTFTurretAngle().getDistance(drivetrain.getHub()));
+            drivetrain.getCurrentTurretPose().getTranslation().getDistance(drivetrain.getHub()));
         position = ShooterConstants.hoodAngleInterpolation
           .getPrediction(
-            drivetrain.getSOTFTurretAngle().getDistance(drivetrain.getHub()));
+            drivetrain.getCurrentTurretPose().getTranslation().getDistance(drivetrain.getHub()));
         break;
       case PASS_SHOOTING:
         //determine passing spot
         Translation2d passSpot;
         if(DriverStation.getAlliance().get() == Alliance.Red) {
-          if(drivetrain.getPose().getY() > 4.03) {
-            passSpot = new Translation2d(15.5, 7);
-          } else {
-            passSpot = new Translation2d(15.5, 1);
-          }
-        } else {
-          if(drivetrain.getPose().getY() > 4.03) {
-            passSpot = new Translation2d(1, 7);
-          } else {
-            passSpot = new Translation2d(1, 1);
-          }
-        }
+                if(drivetrain.getPose().getY() > 4.03) {
+                    passSpot = VisionConstants.RED_PASS_SPOT_1;
+                } else {
+                    passSpot = VisionConstants.RED_PASS_SPOT_2;
+                }
+            } else {
+                if(drivetrain.getPose().getY() > 4.03) {
+                    passSpot = VisionConstants.BLUE_PASS_SPOT_1;
+                } else {
+                    passSpot = VisionConstants.BLUE_PASS_SPOT_2;
+                }
+            }
         // use distance to passing spot for interpolation
         motorspeed = ShooterConstants.shooterSpeedInterpolation
-          .getPrediction(drivetrain.getSOTFTurretAngle().getDistance(passSpot));
+          .getPrediction(
+            drivetrain.getCurrentTurretPose().getTranslation().getDistance(passSpot));
         
         position = ShooterConstants.hoodAngleInterpolation
-          .getPrediction(drivetrain.getSOTFTurretAngle().getDistance(passSpot));
+          .getPrediction(
+            drivetrain.getCurrentTurretPose().getTranslation().getDistance(passSpot));
         break;
       case HOMING:
         position = -.1;

@@ -20,6 +20,7 @@ import frc.robot.subsystems.Intake.Intake;
 import frc.robot.subsystems.Lights.LEDSubsystem_WPIlib;
 import frc.robot.commands.Lights.WPIlib.RunPattern;
 import frc.robot.commands.Lights.WPIlib.ScrollPattern;
+import frc.robot.commands.Lights.WPIlib.SetBlinkingPattern;
 import frc.robot.commands.Lights.WPIlib.SetBreathingPattern;
 import frc.robot.commands.Lights.WPIlib.SetSolidColor;
 import frc.robot.commands.Lights.WPIlib.SetTwinklePattern;
@@ -42,6 +43,8 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.LEDPattern;
+import edu.wpi.first.wpilibj.LEDPattern.GradientType;
+import edu.wpi.first.wpilibj.event.EventLoop;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.util.Color;
@@ -86,7 +89,7 @@ public class RobotContainer {
   private final CommandXboxController driver = new CommandXboxController(OperatorConstants.kDriverControllerPort);
   private final CommandXboxController operator = new CommandXboxController(OperatorConstants.kOperatorControllerPort);
 
-
+  // drive stuff
   private double MaxSpeed = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
   private final Telemetry logger = new Telemetry(MaxSpeed);
   private final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
@@ -99,12 +102,19 @@ public class RobotContainer {
                         .withDriveRequestType(DriveRequestType.OpenLoopVoltage)
                         .withHeadingPID(6, 0, 0);
 
+  // triggers
+  Trigger activeHubWarning = new Trigger(() -> matchInformation.warningLight() == "G");
+  Trigger inactiveHubWarning = new Trigger(() -> matchInformation.warningLight() == "R");
+  Trigger hubAimLights = new Trigger(() -> turret.getState() == TurretWantedState.AIM_HUB);
+  Trigger passsAimLights = new Trigger(() -> turret.getState() == TurretWantedState.AIM_PASS);
+
+
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
     // Configure the trigger bindings
     configureBindings();
-    configureAutoCommands();
     configureNamedCommands();
+    configureAutoCommands();
   }
 
   /**
@@ -164,9 +174,9 @@ public class RobotContainer {
     driver.leftBumper()
       .onTrue(new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.RETRACT)))
       .onFalse(new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.IDLE)));
-    //agitate
+    //outtake
     driver.leftTrigger()
-      .onTrue(new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.SCORE)))
+      .onTrue(new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.OUTTAKE)))
       .onFalse(new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.IDLE)));
 
     // Brake
@@ -180,7 +190,7 @@ public class RobotContainer {
     operator.b()
       .onTrue(new SequentialCommandGroup(
         new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.TRENCH_SHOOT)),
-        new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.TRENCH_PRESET)),
+        new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.TRENCH_PRESETL)),
         // waitToShoot(),
         new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.SHOOT))))
       .onFalse(new ParallelCommandGroup(
@@ -218,9 +228,24 @@ public class RobotContainer {
         new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.IDLE)),
         new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.IDLE))));
 
+    /* CONDITIONAL CONTROLS */
+    activeHubWarning
+      .onTrue(new SetBlinkingPattern(normalLights, LEDPattern.solid(LightsConstants.RBGColors.get("green")), 0.5, 0.5))
+      .onFalse(new DisableLED(normalLights));
+    
+    inactiveHubWarning
+      .onTrue(new SetBlinkingPattern(normalLights, LEDPattern.solid(LightsConstants.RBGColors.get("red")), 0.5, 0.5))
+      .onFalse(new DisableLED(normalLights));
 
+    hubAimLights
+      .onTrue(new ScrollPattern(normalLights, LEDPattern.gradient(GradientType.kContinuous, Color.kCadetBlue, Color.kLightGreen), 2.5))
+      .onFalse(new DisableLED(normalLights));
 
-    /* TESTING BUTTONS */
+    passsAimLights
+      .onTrue(new ScrollPattern(normalLights, LEDPattern.gradient(GradientType.kContinuous, Color.kOrange, Color.kYellow), 2.5))
+      .onFalse(new DisableLED(normalLights));
+
+      /* TESTING BUTTONS */
     //turret
     // operator.x()
     //   .onTrue(new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.AIM_HUB)))
@@ -313,15 +338,26 @@ public class RobotContainer {
 
     NamedCommands.registerCommand("Retract Hood", 
       new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.RETRACT_AUTO)));
+      NamedCommands.registerCommand("FeederIdle", 
+      new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.IDLE)));
 
-    NamedCommands.registerCommand("Auto Trench Shoot", 
+    NamedCommands.registerCommand("Auto Trench Shoot Left", 
       new SequentialCommandGroup(
         new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.TRENCH_SHOOT)),
-        new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.TRENCH_PRESET)),
+        new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.TRENCH_PRESETL)),
         waitToShoot(),
         new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.SHOOT)),
-        wait(1.5),
-        new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.RETRACT))).withTimeout(3));
+        wait(1.0),
+        new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.RETRACT))).withTimeout(3.5));
+
+         NamedCommands.registerCommand("Auto Trench Shoot Right", 
+      new SequentialCommandGroup(
+        new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.TRENCH_SHOOT)),
+        new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.TRENCH_PRESETR)),
+        waitToShoot(),
+        new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.SHOOT)),
+        wait(1.0),
+        new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.RETRACT))).withTimeout(3.5));
 
     NamedCommands.registerCommand("Aim Shoot", 
       new SequentialCommandGroup(

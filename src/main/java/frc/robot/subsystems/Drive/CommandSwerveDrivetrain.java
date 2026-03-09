@@ -120,22 +120,41 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         return futurePose;
     }
 
-    public Translation2d getSOTFTurretAngle() {
+    public Translation2d getSOTFTurretAngle(String whereToAim) {
 
         // Current turret pose
         Pose2d turretPose = getCurrentTurretPose();
 
         // Hub position
-        Translation2d hub;
-        if(DriverStation.getAlliance().get() == Alliance.Red) {
-                hub = VisionConstants.RED_HUB_POSE;
+        Translation2d aimingTarget;
+        if (whereToAim == "hub") {
+            if(DriverStation.getAlliance().get() == Alliance.Red) {
+                aimingTarget = VisionConstants.RED_HUB_POSE;
             } else {
-                hub = VisionConstants.BLUE_HUB_POSE;
+                aimingTarget = VisionConstants.BLUE_HUB_POSE;
             }
+        } else if (whereToAim == "pass") {
+            if(DriverStation.getAlliance().get() == Alliance.Red) {
+                if(getPose().getY() > 4.03) {
+                    aimingTarget = VisionConstants.RED_PASS_SPOT_1;
+                } else {
+                    aimingTarget = VisionConstants.RED_PASS_SPOT_2;
+                }
+            } else {
+                if(getPose().getY() > 4.03) {
+                    aimingTarget = VisionConstants.BLUE_PASS_SPOT_1;
+                } else {
+                    aimingTarget = VisionConstants.BLUE_PASS_SPOT_2;
+                }
+            }
+        } else {
+            aimingTarget = VisionConstants.RED_HUB_POSE;
+        }
+        
 
         // Vector from turret to hub
         Translation2d toTarget =
-            hub.minus(turretPose.getTranslation());
+            aimingTarget.minus(turretPose.getTranslation());
 
         double distance = toTarget.getNorm();
 
@@ -173,12 +192,12 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         // velocity induced by robot rotation
         Translation2d rotationalVelocity =
             new Translation2d(
-                -omega * turretOffset.getY(),
-                omega * turretOffset.getX()
+                +omega * turretOffset.getX(),
+                -omega * turretOffset.getY()
             );
 
         Translation2d rotationalCorrection =
-            rotationalVelocity.times(timeOfFlight);
+            rotationalVelocity;
 
         // --- COMBINED CORRECTION ---
 
@@ -413,7 +432,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
             var estStdDevs = vision.getEstimationStdDevs(estPose);
             super.addVisionMeasurement(
                     estPose,
-                    Utils.fpgaToCurrentTime(visionEst.get().timestampSeconds),
+                    Utils.fpgaToCurrentTime(visionEst2.get().timestampSeconds),
                     estStdDevs);
         } else if (visionEst.isPresent() && visionEst3.isPresent()) {
             var estPose = vision.getPoseFromCams13();

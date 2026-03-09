@@ -149,15 +149,16 @@ public final class Constants {
       INTAKE, 
       RETRACT,
       RESET,
-      SCORE
+      SCORE,
+      OUTTAKE
     }
     public enum SystemState {
       IDLING,
       INTAKING,
       RETRACTING,
       RESETING,
-      SCORING
-      
+      SCORING,
+      OUTTAKING
     }
   }  
   
@@ -176,7 +177,8 @@ public final class Constants {
 
     public static double passAimPosition = 0;
     public static double hubPresetPosition;
-    public static double trenchPresetPosition = .51;
+    public static double trenchPresetPositionL = .52;
+    public static double trenchPresetPositionR = .49;
     public static double tolerance = 0.007;
 
     public static double[] turretPID = {51, 0, 0};
@@ -186,7 +188,8 @@ public final class Constants {
       IDLE,
       AIM_PASS,
       AIM_HUB,
-      TRENCH_PRESET,
+      TRENCH_PRESETL,
+      TRENCH_PRESETR,
       HUB_PRESET,
       TEST
       
@@ -195,7 +198,8 @@ public final class Constants {
       IDLING,
       PASS_AIMING,
       HUB_AIMING,
-      TRENCH_PRESETTING,
+      TRENCH_PRESETTINGL,
+      TRENCH_PRESETTINGR,
       HUB_PRESETTING,
       TESTING
     }
@@ -237,7 +241,7 @@ public final class Constants {
     public static Distance spacing = Meters.of(1 / 60);   // (1 / 60) - 60 leds per 1m strip [Spacing: 1m/#ofLEDs]
     // LED Strip
     public static int led_port = 0;
-    public static int led_length = 48;   // 48 LEDs, 24 a side
+    public static int led_length = 20;   // 48 LEDs, 24 a side
     public static int led_brightness = 50;
     // Signal LED Sector (on shooter)
     public static int signal_length = 10;   // 10, 5 a side
@@ -345,39 +349,48 @@ public final class Constants {
         new Rotation2d());
 
     public static Translation2d BLUE_HUB_POSE =
-      new Translation2d(4.62, 3.53); //was 4.03
+      new Translation2d(4.62, 4.03); //was 4.03
     public static Translation2d RED_HUB_POSE =
-      new Translation2d(11.92, 3.53); //was 4.03
+      new Translation2d(11.92, 4.03); //was 4.03
+
+    public static Translation2d BLUE_PASS_SPOT_1 = 
+      new Translation2d(1, 1);
+    public static Translation2d BLUE_PASS_SPOT_2 = 
+      new Translation2d(1, 7);
+    public static Translation2d RED_PASS_SPOT_1 = 
+      new Translation2d(15.5, 7);
+    public static Translation2d RED_PASS_SPOT_2 = 
+      new Translation2d(15.5, 1);
 
     public static double bumperToBumper; // inches
 
     public static Transform3d kRobotToCam = new Transform3d(
       new Translation3d(
-        -(Units.inchesToMeters(0.643)), 
-        Units.inchesToMeters(0.616), 
-        Units.inchesToMeters(17.467+2.75)),
+        (Units.inchesToMeters(6.643)), 
+        -Units.inchesToMeters(0.616), 
+        Units.inchesToMeters(17.467+2.7525)),
       new Rotation3d(
         0, 
         Units.degreesToRadians(20), 
         0)
       );
-
+    // center back cam
     public static Transform3d kRobotToCam2 = new Transform3d(
       new Translation3d(
-        -(Units.inchesToMeters(13.5)), 
-        Units.inchesToMeters(0.836),
-        Units.inchesToMeters(9.317+2.75)),
+        -(Units.inchesToMeters(12.844)), 
+        Units.inchesToMeters(0.848),
+        Units.inchesToMeters(12.195)),
       new Rotation3d(
         0, 
         Units.degreesToRadians(20), 
         Units.degreesToRadians(135))
         );
-
+    // corner camera
     public static Transform3d kRobotToCam3 = new Transform3d(
       new Translation3d(
-        -(Units.inchesToMeters(13.5)), 
-        -(Units.inchesToMeters(12.837)),
-        Units.inchesToMeters(9.378+2.75)),
+        -(Units.inchesToMeters(12.843)), 
+        -(Units.inchesToMeters(12.851)),
+        Units.inchesToMeters(12.195)),
       new Rotation3d(
         0, 
         Units.degreesToRadians(20), 

@@ -47,12 +47,29 @@
     },
     "windows": {
       "/SmartDashboard/The field": {
+        "Robot": {
+          "color": [
+            0.0,
+            251.19406127929688,
+            255.0,
+            255.0
+          ]
+        },
         "bottom": 1914,
         "height": 8.069275856018066,
         "left": 245,
         "right": 3942,
+        "robot": {
+          "length": 0.8636000156402588,
+          "width": 0.8636000156402588
+        },
         "top": 118,
         "width": 16.54119300842285,
+        "window": {
+          "visible": true
+        }
+      },
+      "/SmartDashboard/autos": {
         "window": {
           "visible": true
         }
@@ -60,6 +77,12 @@
     }
   },
   "NetworkTables Info": {
+    "Clients": {
+      "open": true
+    },
+    "Server": {
+      "open": true
+    },
     "visible": true
   },
   "NetworkTables Settings": {
@@ -76,7 +99,7 @@
             0.0,
             0.8500000238418579
           ],
-          "height": -46,
+          "height": 0,
           "series": [
             {
               "color": [
@@ -98,7 +121,10 @@
             }
           ]
         }
-      ]
+      ],
+      "window": {
+        "visible": false
+      }
     },
     "Plot <1>": {
       "plots": [

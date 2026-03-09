@@ -172,11 +172,11 @@ public class Vision {
             double estSINFrom1 = poseFrom1.getRotation().getSin();
             double estSINFrom2 = poseFrom2.getRotation().getSin();
 
-            double avgX = (estXFrom1 + estXFrom2 ) / 3;
-            double avgY = (estYFrom1 + estYFrom2 ) / 3;
+            double avgX = (estXFrom1 + estXFrom2 ) / 2;
+            double avgY = (estYFrom1 + estYFrom2 ) / 2;
 
-            double avgCos = (estCOSFrom1 + estCOSFrom2) / 3;
-            double avgSin = (estSINFrom1 + estSINFrom2) / 3;
+            double avgCos = (estCOSFrom1 + estCOSFrom2) / 2;
+            double avgSin = (estSINFrom1 + estSINFrom2) / 2;
 
             combinedEstimate = new Pose2d(avgX, avgY, new Rotation2d(avgCos, avgSin));
 
@@ -207,11 +207,11 @@ public class Vision {
             double estSINFrom2 = poseFrom2.getRotation().getSin();
             double estSINFrom3 = poseFrom3.getRotation().getSin();
 
-            double avgX = ( estXFrom2 + estXFrom3) / 3;
-            double avgY = ( estYFrom2 + estYFrom3) / 3;
+            double avgX = ( estXFrom2 + estXFrom3) / 2;
+            double avgY = ( estYFrom2 + estYFrom3) / 2;
 
-            double avgCos = ( estCOSFrom2 + estCOSFrom3) / 3;
-            double avgSin = ( estSINFrom2 + estSINFrom3) / 3;
+            double avgCos = ( estCOSFrom2 + estCOSFrom3) / 2;
+            double avgSin = ( estSINFrom2 + estSINFrom3) / 2;
 
             combinedEstimate = new Pose2d(avgX, avgY, new Rotation2d(avgCos, avgSin));
         } else {
@@ -241,11 +241,11 @@ public class Vision {
             double estSINFrom1 = poseFrom1.getRotation().getSin();
             double estSINFrom3 = poseFrom3.getRotation().getSin();
 
-            double avgX = (estXFrom1  + estXFrom3) / 3;
-            double avgY = (estYFrom1  + estYFrom3) / 3;
+            double avgX = (estXFrom1  + estXFrom3) / 2;
+            double avgY = (estYFrom1  + estYFrom3) / 2;
 
-            double avgCos = (estCOSFrom1 + estCOSFrom3) / 3;
-            double avgSin = (estSINFrom1 + estSINFrom3) / 3;
+            double avgCos = (estCOSFrom1 + estCOSFrom3) / 2;
+            double avgSin = (estSINFrom1 + estSINFrom3) / 2;
 
             combinedEstimate = new Pose2d(avgX, avgY, new Rotation2d(avgCos, avgSin));
         } else {

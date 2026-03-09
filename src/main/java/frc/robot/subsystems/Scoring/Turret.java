@@ -37,12 +37,14 @@ import frc.robot.Constants.TurretConstants.TurretWantedState;
 import frc.robot.Constants.VisionConstants;
 import frc.robot.subsystems.Drive.CommandSwerveDrivetrain;
 import frc.robot.subsystems.Lights.LEDSubsystem_WPIlib;
+import frc.robot.subsystems.Lights.LEDSubsystem_WPIlib.LEDTarget;
 import frc.robot.Constants.TurretConstants.SystemState;
 import frc.util.LoggedTunableNumber;
 
 public class Turret extends SubsystemBase {
   private final CommandSwerveDrivetrain drivetrain;
   private final LEDSubsystem_WPIlib leds;
+  private LEDTarget currentLEDTarget = LEDTarget.SIDES;
   /* MOTORS */
   private TalonFX turretMotor = new TalonFX(TurretConstants.turretMotorID, "rio");
   private TalonFXConfiguration turretMotorConfig = new TalonFXConfiguration();
@@ -134,8 +136,10 @@ public class Turret extends SubsystemBase {
           yield SystemState.HUB_AIMING;
       case AIM_PASS:
         yield SystemState.PASS_AIMING;
-      case TRENCH_PRESET:
-        yield SystemState.TRENCH_PRESETTING;
+      case TRENCH_PRESETL:
+        yield SystemState.TRENCH_PRESETTINGL;
+      case TRENCH_PRESETR:
+        yield SystemState.TRENCH_PRESETTINGR;
       case HUB_PRESET:
         yield SystemState.HUB_PRESETTING;
       case TEST:
@@ -167,17 +171,17 @@ public class Turret extends SubsystemBase {
             passSpot = new Translation2d(1, 1);
           }
         }
-        leds.LED_ScrollPatternRelative(LEDPattern.gradient(GradientType.kContinuous, Color.kOrange, Color.kYellow), 2.5);
+        // leds.LED_ScrollPatternRelative(LEDPattern.gradient(GradientType.kContinuous, Color.kOrange, Color.kYellow), 2.5);
         double currentTurretToRobotAngle = turretMotor.getPosition().getValueAsDouble();
         //calculate robot angle relative to field
-        // Rotation2d currentRobotAngle = drivetrain.getTurretPose().getRotation();
-        Rotation2d currentRobotAngle = drivetrain.getSOTFTurretAngle().getAngle();
+        Rotation2d currentRobotAngle = drivetrain.getTurretPose().getRotation();
+        Rotation2d angleToHub = drivetrain.getSOTFTurretAngle("pass").getAngle();
 
         // calculate desired angle of turret relative to hub
-        double angleToHub = (Math.atan2(passSpot.getY(), passSpot.getX()));
+        // double angleToHub = (Math.atan2(passSpot.getY(), passSpot.getX()));
 
         // calculate desired angle of turret relative to robot
-        Rotation2d desiredTurretAngle = Rotation2d.fromRadians(angleToHub).minus(currentRobotAngle);
+        Rotation2d desiredTurretAngle = (angleToHub).minus(currentRobotAngle);
         // convert to rotations
         double convertedTurretAngle = desiredTurretAngle.getDegrees()/360;
         
@@ -199,17 +203,18 @@ public class Turret extends SubsystemBase {
         break;
       case HUB_AIMING:
         double target2 = 0;
-        leds.LED_ScrollPatternRelative(LEDPattern.gradient(GradientType.kContinuous, Color.kCadetBlue, Color.kLightGreen), 2.5);
+        // leds.LED_ScrollPatternRelative(LEDPattern.gradient(GradientType.kContinuous, Color.kCadetBlue, Color.kLightGreen), 2.5);
         double currentTurretToRobotAngle2 = turretMotor.getPosition().getValueAsDouble();
         //calculate robot angle relative to field
-        // Rotation2d currentRobotAngle = drivetrain.getTurretPose().getRotation();
-        Rotation2d currentRobotAngle2 = drivetrain.getSOTFTurretAngle().getAngle();
+        Rotation2d currentRobotAngle2 = drivetrain.getTurretPose().getRotation();
+        Rotation2d angleToHub2 = drivetrain.getSOTFTurretAngle("hub").getAngle();
 
         // calculate desired angle of turret relative to hub
-        double angleToHub2 = (Math.atan2(drivetrain.getYfromHub(), drivetrain.getXfromHub()));
+        // double angleToHub2 = (Math.atan2(drivetrain.getYfromHub(), drivetrain.getXfromHub()));
 
         // calculate desired angle of turret relative to robot
-        Rotation2d desiredTurretAngle2 = Rotation2d.fromRadians(angleToHub2).minus(currentRobotAngle2);
+        Rotation2d desiredTurretAngle2 = (angleToHub2).minus(currentRobotAngle2);
+        // Rotation2d desiredTurretAngle2 = currentRobotAngle2;
         // convert to rotations
         double convertedTurretAngle2 = desiredTurretAngle2.getDegrees()/360;
         
@@ -229,8 +234,11 @@ public class Turret extends SubsystemBase {
 
         position = target2;
         break;
-      case TRENCH_PRESETTING:
-        position = TurretConstants.trenchPresetPosition;
+      case TRENCH_PRESETTINGL:
+        position = TurretConstants.trenchPresetPositionL;
+        break;
+      case TRENCH_PRESETTINGR:
+        position = TurretConstants.trenchPresetPositionR;
         break;
       case HUB_PRESETTING:
         position = TurretConstants.hubPresetPosition;
@@ -266,6 +274,10 @@ public class Turret extends SubsystemBase {
       turretMotor.getConfigurator().apply(turretMotorConfig);
 
     }
+  }
+
+  public TurretWantedState getState() {
+    return wantedState;
   }
 
   private void logValues() {
