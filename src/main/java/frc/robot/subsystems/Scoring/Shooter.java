@@ -4,6 +4,8 @@
 
 package frc.robot.subsystems.Scoring;
 
+import java.math.MathContext;
+
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.StatusCode;
 import com.ctre.phoenix6.configs.MotionMagicConfigs;
@@ -18,6 +20,7 @@ import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -180,7 +183,7 @@ public class Shooter extends SubsystemBase {
         //   }
         // }
       case TRENCH_SHOOT:
-        yield systemState.TRENCH_SHOOTING;
+        yield SystemState.TRENCH_SHOOTING;
       case PASS_SHOOT:
         yield SystemState.PASS_SHOOTING;
       case HUB_SHOOT:
@@ -216,25 +219,29 @@ public class Shooter extends SubsystemBase {
         position = 5.5;
         break;
       case HUB_SHOOTING:
-    Translation2d correctedVector = drivetrain.getSOTFTurretAngle("hub");
-    double correctedDistance = correctedVector.getNorm();
+        Translation2d correctedVector = drivetrain.getSOTFTurretAngle("hub");
+        double correctedDistance = correctedVector.getNorm();
 
-    motorspeed = ShooterConstants.shooterSpeedInterpolation
-        .getPrediction(correctedDistance);
+        motorspeed = ShooterConstants.shooterSpeedInterpolation
+            .getPrediction(correctedDistance);
 
-    position = ShooterConstants.hoodAngleInterpolation
-        .getPrediction(correctedDistance);
-    break;
+        position = MathUtil.clamp(
+          ShooterConstants.hoodAngleInterpolation.getPrediction(correctedDistance), 
+          -0.5, 
+          8);
+        break;
       case PASS_SHOOTING:
-         Translation2d correctedVector2 = drivetrain.getSOTFTurretAngle("pass");
-    double correctedDistance2 = correctedVector2.getNorm();
+        Translation2d correctedVector2 = drivetrain.getSOTFTurretAngle("pass");
+        double correctedDistance2 = correctedVector2.getNorm();
 
-    motorspeed = ShooterConstants.shooterSpeedInterpolation
-        .getPrediction(correctedDistance2);
+        position = MathUtil.clamp(
+          ShooterConstants.hoodAngleInterpolation.getPrediction(correctedDistance2), 
+          -.5, 
+          8);
 
-    position = ShooterConstants.hoodAngleInterpolation
-        .getPrediction(correctedDistance2);
-    break;
+        motorspeed = ShooterConstants.shooterSpeedInterpolation
+            .getPrediction(correctedDistance2);
+        break;
       case HOMING:
         position = -.1;
         if (hoodMotor.getSupplyCurrent().getValueAsDouble() >= ShooterConstants.homingThreshold) {

@@ -194,8 +194,8 @@ public class RobotContainer {
         // waitToShoot(),
         new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.SHOOT))))
       .onFalse(new ParallelCommandGroup(
-        new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.IDLE)),
-        new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.IDLE)),
+        new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.WAIT)),
+        new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.IDLE_AIM)),
         new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.IDLE))));
     //agitation manual
     operator.leftTrigger()
@@ -212,7 +212,7 @@ public class RobotContainer {
           new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.SHOOT)))
       )
       .onFalse(new ParallelCommandGroup(
-        new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.IDLE)),
+        new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.WAIT)),
         new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.IDLE_AIM)),
         new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.IDLE))));
     // passing
@@ -221,12 +221,11 @@ public class RobotContainer {
           new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.PASS_SHOOT)),
           new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.AIM_PASS)),
           // waitToShoot(),
-            new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.IDLE)),
-            new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.SHOOT))
+          new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.SHOOT))
       ))
       .onFalse(new ParallelCommandGroup(
-        new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.IDLE)),
-        new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.IDLE)),
+        new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.WAIT)),
+        new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.IDLE_AIM)),
         new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.IDLE))));
 
     /* CONDITIONAL CONTROLS */
