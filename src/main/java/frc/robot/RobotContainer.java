@@ -67,14 +67,14 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
  */
 public class RobotContainer {
   // The robot's subsystems and commands are defined here...
-  private final LEDSubsystem_WPIlib normalLights = new LEDSubsystem_WPIlib();
+  public final LEDSubsystem_WPIlib normalLights = new LEDSubsystem_WPIlib();
   public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
-  private final Intake intake = new Intake();
-  private final Turret turret = new Turret(drivetrain, normalLights);
-  private final Shooter shooter = new Shooter(drivetrain);
-    private final Feeder feeder = new Feeder(turret, shooter, drivetrain);
+  public final Intake intake = new Intake();
+  public final Turret turret = new Turret(drivetrain, normalLights);
+  public final Shooter shooter = new Shooter(drivetrain);
+  public final Feeder feeder = new Feeder(turret, shooter, drivetrain);
   // private final Vision vision = new Vision();
-  private final MatchInformation matchInformation = new MatchInformation(normalLights);
+  public final MatchInformation matchInformation = new MatchInformation(normalLights);
   public SendableChooser<Command> sendableChooser = new SendableChooser<>();
   
 
@@ -213,7 +213,7 @@ public class RobotContainer {
       )
       .onFalse(new ParallelCommandGroup(
         new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.IDLE)),
-        new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.IDLE)),
+        new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.IDLE_AIM)),
         new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.IDLE))));
     // passing
     operator.rightBumper()

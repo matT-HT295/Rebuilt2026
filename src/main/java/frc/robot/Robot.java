@@ -10,6 +10,10 @@ import edu.wpi.first.net.PortForwarder;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.robot.Constants.FeederConstants.FeederWantedState;
+import frc.robot.Constants.IntakeConstants.IntakeWantedState;
+import frc.robot.Constants.ShooterConstants.ShooterWantedState;
+import frc.robot.Constants.TurretConstants.TurretWantedState;
 
 /**
  * The methods in this class are called automatically corresponding to each mode, as described in
@@ -85,6 +89,10 @@ public class Robot extends TimedRobot {
     if (m_autonomousCommand != null) {
       m_autonomousCommand.cancel();
     }
+    m_robotContainer.feeder.setWantedFeederState(FeederWantedState.IDLE);
+    m_robotContainer.shooter.setWantedShooterState(ShooterWantedState.IDLE);
+    m_robotContainer.turret.setWantedTurretState(TurretWantedState.IDLE);
+    m_robotContainer.intake.setWantedIntakeState(IntakeWantedState.IDLE);
   }
 
   /** This function is called periodically during operator control. */
