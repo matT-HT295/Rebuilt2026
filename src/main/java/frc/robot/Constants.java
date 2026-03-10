@@ -45,7 +45,7 @@ public final class Constants {
   }
 
   public static class ShooterConstants {
-    public static double activeWaitingSpeed;
+    public static double activeWaitingSpeed = 30;
     public static double inactiveWaitingSpeed;
     public static PolynomialRegression hoodAngleInterpolation = 
     new PolynomialRegression(
@@ -186,6 +186,7 @@ public final class Constants {
 
     public enum TurretWantedState {
       IDLE,
+      IDLE_AIM,
       AIM_PASS,
       AIM_HUB,
       TRENCH_PRESETL,
@@ -196,6 +197,7 @@ public final class Constants {
     }
     public enum SystemState {
       IDLING,
+      IDLE_AIMING,
       PASS_AIMING,
       HUB_AIMING,
       TRENCH_PRESETTINGL,
@@ -217,7 +219,7 @@ public final class Constants {
     public static int towerMotorID = 41;
     public static int spindexerMotorID = 40;
 
-    public static double feederIntakeSpeed;
+    public static double feederIntakeSpeed = 0;
     public static double feederShootSpeed = 0.8;
     
     public static double[] feederPID = {0, 0, 0};
@@ -227,12 +229,14 @@ public final class Constants {
       IDLE,
       INTAKE,
       SHOOT,
+      PASS,
       FEEDTEST
     }
     public enum SystemState {
       IDLING,
       INTAKING,
       SHOOTING,
+      PASSING,
       FEEDTESTING
     }
   }
@@ -406,5 +410,17 @@ public final class Constants {
     public static edu.wpi.first.math.Vector<N3> kMultiTagStdDevs = VecBuilder.fill(1, 1, 1);
     public static edu.wpi.first.math.Vector<N3> odoStdDEvs = VecBuilder.fill(.2, .2, .05);
     public static double odometryUpdateFrequency = 250;
+  }
+
+  public static class FieldConstants {
+    public enum ScoringZone {
+      RED_PASSING_1,
+      RED_PASSING_2,
+      BLUE_PASSING_1,
+      BLUE_PASSING_2,
+      RED_HUB,
+      BLUE_HUB,
+      NO_TRACK
+    }
   }
 }

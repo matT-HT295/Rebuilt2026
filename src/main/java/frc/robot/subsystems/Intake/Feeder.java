@@ -20,6 +20,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.FeederConstants;
 import frc.robot.Constants.FeederConstants.FeederWantedState;
 import frc.robot.Constants.FeederConstants.SystemState;
+import frc.robot.subsystems.Drive.CommandSwerveDrivetrain;
 import frc.robot.subsystems.Scoring.Shooter;
 import frc.robot.subsystems.Scoring.Turret;
 import frc.util.LoggedTunableNumber;
@@ -27,6 +28,7 @@ import frc.util.LoggedTunableNumber;
 public class Feeder extends SubsystemBase {
   private Turret turret;
   private Shooter shooter;
+  private CommandSwerveDrivetrain drivetrain;
   /* MOTORS */
   private TalonFX spindexerMotor = new TalonFX(FeederConstants.spindexerMotorID, "rio");
   private TalonFXConfiguration spindexerMotorConfig = new TalonFXConfiguration();
@@ -54,9 +56,10 @@ public class Feeder extends SubsystemBase {
   SystemState systemState = SystemState.IDLING;
 
   /** Creates a new Feeder */
-  public Feeder(Turret m_turret, Shooter m_shooter) {
+  public Feeder(Turret m_turret, Shooter m_shooter, CommandSwerveDrivetrain m_Drivetrain) {
     this.turret = m_turret;
     this.shooter = m_shooter;
+    this.drivetrain = m_Drivetrain;
     /* SETUP CONFIG */
     
     // CURRENT LIMITS
@@ -96,6 +99,8 @@ public class Feeder extends SubsystemBase {
         yield SystemState.INTAKING;
       case SHOOT: 
         yield SystemState.SHOOTING;
+      case PASS:
+        yield SystemState.PASSING;
       case FEEDTEST:
         yield SystemState.FEEDTESTING;
     };
@@ -121,6 +126,14 @@ public class Feeder extends SubsystemBase {
           towerMotorSpeed = 0;
         }
         break;
+      case PASSING:
+        if (drivetrain.getPose().getY() > 3.53 && drivetrain.getPose().getY() < 4.53) {
+          spindexerMotorSpeed = 0;
+          towerMotorSpeed = 0;
+        } else {
+          spindexerMotorSpeed = FeederConstants.feederShootSpeed;
+          towerMotorSpeed = FeederConstants.feederShootSpeed;
+        }
       case FEEDTESTING:
         spindexerMotorSpeed = 0.7;
         towerMotorSpeed = 0.7;
@@ -138,15 +151,10 @@ public class Feeder extends SubsystemBase {
   public void periodic() {
     SmartDashboard.putString("FEEDER WANTED STATE", wantedState.toString());
     SmartDashboard.putString("FEEDER SYSTEM STATE", systemState.toString());
+    
     systemState = changeCurrentSystemState();
     applyState();
-    //example of how to control motor for velocity
-    // towerMotor.setControl(mm_request.withVelocity(shootmotorspeed));
-    // //example of how to control motor for position
-    // towerMotor.setControl(mmE_request.withPosition(position));
-    // spindexerMotor.setControl(mm_request.withVelocity(intakemotorspeed));
-    //example of how to control motor for position
-    //spindexerMotor.setControl(mmE_request.withPosition(position));
+
     spindexerMotor.set(spindexerMotorSpeed);
     towerMotor.set(towerMotorSpeed);
   }

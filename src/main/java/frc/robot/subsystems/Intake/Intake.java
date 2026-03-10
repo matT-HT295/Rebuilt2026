@@ -156,9 +156,9 @@ public class Intake extends SubsystemBase {
   
   private void LogValues() {
     SmartDashboard.putNumber("Extension Motor Position", intakeExtensionMotor.getPosition().getValueAsDouble());
-    SmartDashboard.putNumber("Intake actual speed", intakeMotor.get());
-    SmartDashboard.putNumber("Extension Wanted Position", position);
-    SmartDashboard.putNumber("Intake Wanted Speed", motorspeed);
+    // SmartDashboard.putNumber("Intake actual speed", intakeMotor.get());
+    // SmartDashboard.putNumber("Extension Wanted Position", position);
+    // SmartDashboard.putNumber("Intake Wanted Speed", motorspeed);
     SmartDashboard.putString("INTAKE WANTED STATE", wantedState.toString());
     SmartDashboard.putString("INTAKE SYSTEM STATE", systemState.toString());
   }

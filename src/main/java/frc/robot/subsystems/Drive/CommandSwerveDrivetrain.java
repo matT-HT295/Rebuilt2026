@@ -37,6 +37,7 @@ import edu.wpi.first.wpilibj2.command.Subsystem;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants.ShooterConstants;
 import frc.robot.Constants.VisionConstants;
+import frc.robot.Constants.FieldConstants.ScoringZone;
 import frc.robot.subsystems.Drive.TunerConstants.TunerSwerveDrivetrain;
 
 
@@ -73,6 +74,32 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     public Pose2d getPose() {
         return this.getState().Pose;
     }
+
+    public ScoringZone getZone() {
+        Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
+        if(alliance.equals(Alliance.Blue)) {
+            if(0 < getPose().getX() && getPose().getX() < 3.6) {
+                return ScoringZone.BLUE_HUB;
+            } else {
+                if(4.03 < getPose().getY()) {
+                    return ScoringZone.BLUE_PASSING_2;
+                } else {
+                    return ScoringZone.BLUE_PASSING_1;
+                }
+            }
+        } else {
+            if(13 < getPose().getX() && getPose().getX() < 16.6) {
+                return ScoringZone.RED_HUB;
+            } else {
+                if(4.03 < getPose().getY()) {
+                    return ScoringZone.RED_PASSING_2;
+                } else {
+                    return ScoringZone.RED_PASSING_1;
+                }
+            }
+        }
+    }
+
 
     public boolean isInAllianceZone() {
         double xDistance = getPose().getX();
@@ -147,7 +174,8 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
                     aimingTarget = VisionConstants.BLUE_PASS_SPOT_2;
                 }
             }
-        } else {
+        }
+        else {
             aimingTarget = VisionConstants.RED_HUB_POSE;
         }
         
@@ -164,12 +192,12 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
                 .getPrediction(distance);
 
         // Convert robot speeds to field relative
-        ChassisSpeeds fieldSpeeds =
-            ChassisSpeeds.fromRobotRelativeSpeeds(
-                getState().Speeds,
-                getPose().getRotation()
-            );
-
+        // ChassisSpeeds fieldSpeeds =
+        //     ChassisSpeeds.fromRobotRelativeSpeeds(
+        //         getState().Speeds,
+        //         getPose().getRotation()
+        //     );
+        ChassisSpeeds fieldSpeeds = getState().Speeds;
         // Robot translational velocity
         Translation2d robotVelocity =
             new Translation2d(
