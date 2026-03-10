@@ -24,7 +24,6 @@ import frc.robot.commands.Lights.WPIlib.SetBlinkingPattern;
 import frc.robot.commands.Lights.WPIlib.SetBreathingPattern;
 import frc.robot.commands.Lights.WPIlib.SetSolidColor;
 import frc.robot.commands.Lights.WPIlib.SetTwinklePattern;
-import frc.robot.commands.Lights.WPIlib.DisableLED;
 import frc.robot.commands.Lights.WPIlib.ResetLED;
 
 import static edu.wpi.first.units.Units.Meter;
@@ -104,8 +103,8 @@ public class RobotContainer {
                         .withHeadingPID(6, 0, 0);
 
   // triggers
-  Trigger activeHubWarning = new Trigger(() -> matchInformation.warningLight() == "G");
-  Trigger inactiveHubWarning = new Trigger(() -> matchInformation.warningLight() == "R");
+  // Trigger activeHubWarning = new Trigger(() -> matchInformation.shiftWarning_active == true);
+  // Trigger inactiveHubWarning = new Trigger(() -> matchInformation.shiftWarning_active == false);
   Trigger hubAimLights = new Trigger(() -> turret.getState() == TurretWantedState.AIM_HUB);
   Trigger passsAimLights = new Trigger(() -> turret.getState() == TurretWantedState.AIM_PASS);
 
@@ -234,22 +233,21 @@ public class RobotContainer {
         new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.IDLE))));
 
     /* CONDITIONAL CONTROLS */
-    activeHubWarning
-      .onTrue(new SetBlinkingPattern(normalLights, LEDPattern.solid(LightsConstants.RBGColors.get("green")), 0.5, 0.5))
-      .onFalse(new DisableLED(normalLights));
+    // activeHubWarning
+    //   .onTrue(new SetBlinkingPattern(normalLights, LEDSubsystem_WPIlib.LEDTarget.SIDES, LEDPattern.solid(LightsConstants.RBGColors.get("green")), 0.5, 0.5))
+    //   .onFalse(new DisableLED(normalLights));  // NEVER USE DURING COMPETITIONS: It turns off the LED strips till robot restarts. Safety measure only!!!!!
     
-    inactiveHubWarning
-      .onTrue(new SetBlinkingPattern(normalLights, LEDPattern.solid(LightsConstants.RBGColors.get("red")), 0.5, 0.5))
-      .onFalse(new DisableLED(normalLights));
+    // inactiveHubWarning
+    //   .onTrue(new SetBlinkingPattern(normalLights, LEDSubsystem_WPIlib.LEDTarget.SIDES, LEDPattern.solid(LightsConstants.RBGColors.get("red")), 0.5, 0.5))
+    //   .onFalse(new DisableLED(normalLights));  // NEVER USE DURING COMPETITIONS: It turns off the LED strips till robot restarts. Safety measure only!!!!!
 
     hubAimLights
-      .onTrue(new ScrollPattern(normalLights, LEDPattern.gradient(GradientType.kContinuous, Color.kCadetBlue, Color.kLightGreen), 2.5))
-      .onFalse(new DisableLED(normalLights));
+      .onTrue(new ScrollPattern(normalLights, LEDSubsystem_WPIlib.LEDTarget.SIDES, LEDPattern.gradient(GradientType.kContinuous, Color.kCadetBlue, Color.kLightGreen), 2.5))
+      .onFalse(new ResetLED(normalLights, LEDSubsystem_WPIlib.LEDTarget.SIDES));
 
     passsAimLights
-      .onTrue(new ScrollPattern(normalLights, LEDPattern.gradient(GradientType.kContinuous, Color.kOrange, Color.kYellow), 2.5))
-      .onFalse(new DisableLED(normalLights));
-
+      .onTrue(new ScrollPattern(normalLights, LEDSubsystem_WPIlib.LEDTarget.SIDES, LEDPattern.gradient(GradientType.kContinuous, Color.kOrange, Color.kYellow), 2.5))
+      .onFalse(new ResetLED(normalLights, LEDSubsystem_WPIlib.LEDTarget.SIDES));
       /* TESTING BUTTONS */
     //turret
     // operator.x()

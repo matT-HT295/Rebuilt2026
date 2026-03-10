@@ -5,10 +5,12 @@ import edu.wpi.first.wpilibj.LEDPattern;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.LightsConstants;
+import frc.robot.commands.Lights.WPIlib.SetBlinkingPattern;
+import frc.robot.commands.Lights.WPIlib.ResetLED;
 import frc.robot.subsystems.Lights.LEDSubsystem_WPIlib;
 
 public class MatchInformation extends SubsystemBase{
-    LEDSubsystem_WPIlib normalLights;
+    private final LEDSubsystem_WPIlib normalLights;
 
     // Match Phases
     public enum MatchPhase {
@@ -34,14 +36,14 @@ public class MatchInformation extends SubsystemBase{
     // Phases + Shifts
     public MatchPhase phase;
     public double phaseElapsed;
-
     public boolean hubActive;
     public int teleopShift;
     public double shiftTimeRemaining;
+    public static final double SHIFT_WARNING_THRESHOLD = 5;
     public boolean shift1Active;
     public boolean redInactiveFirst;
-    public boolean shouldWarn;
-    public boolean warning;
+    public boolean shiftWarning_advised;
+    public boolean shiftWarning_active;
 
     // Flags
     public boolean endgame;
@@ -54,7 +56,7 @@ public class MatchInformation extends SubsystemBase{
     public double autoStartTimestamp;
 
     public MatchInformation(LEDSubsystem_WPIlib m_normalLights) {
-        this.normalLights = m_normalLights;
+        normalLights = m_normalLights;
         revertDefaultState();
     }
 
@@ -74,6 +76,7 @@ public class MatchInformation extends SubsystemBase{
         phase = MatchPhase.DISABLED;
         shiftTimeRemaining = 0;
         phaseElapsed = 0;
+        shiftWarning_active = false;
 
         hubActive = false;
         teleopShift = 0;
@@ -236,39 +239,21 @@ public class MatchInformation extends SubsystemBase{
             return;
         }
 
-        // determining flashing
-        if (130 > matchTime && matchTime > 125) {
-            shouldWarn = true;
-            warning = true;
-            return;
-        }
-        else if (105 > matchTime && matchTime > 100) {
-            shouldWarn = true;
-            warning = !hubActive;
-        }
-        else if (80 > matchTime && matchTime > 75) {
-            shouldWarn = true;
-            warning = !hubActive;
-        }
-        else if (55 > matchTime && matchTime > 50) {
-            shouldWarn = true;
-            warning = !hubActive;
-        }
-        else if (30 > matchTime && matchTime > 25) {
-            shouldWarn = true;
-            warning = !hubActive;
-        }
-        else {
-            shouldWarn = false;
-            warning = false;
-            return;
-        }
+        // Shift timing
         double cycleElapsed = 130 - matchTime;
         double intoShift = cycleElapsed % 25.0;
         shiftTimeRemaining = 25.0 - intoShift;
 
         if (shiftTimeRemaining >= 25.0)
             shiftTimeRemaining = 0;
+
+        // Determine if warning should activate
+        shiftWarning_advised =
+                teleop &&
+                teleopShift > 0 &&
+                !endgame &&
+                shiftTimeRemaining > 0 &&
+                shiftTimeRemaining <= SHIFT_WARNING_THRESHOLD;
     }
 
     /** Update convenience flags based on current match state. ! Run after updating Driver Station info, timestamps, and hub logic. !
@@ -284,6 +269,38 @@ public class MatchInformation extends SubsystemBase{
         return enabled && matchTime >= 0;
     }
 
+    /**
+     * Update shift warning lights based on remaining shift time.
+     */
+    public void updateShiftWarning() {
+        if (shiftWarning_advised && !shiftWarning_active) {
+
+            shiftWarning_active = true;
+
+            if (hubActive) {
+                new SetBlinkingPattern(
+                    normalLights,
+                    LEDSubsystem_WPIlib.LEDTarget.SIDES,
+                    LEDPattern.solid(LightsConstants.RBGColors.get("green")),
+                    0.5,
+                    0.5
+                ).schedule();
+            } else {
+                new SetBlinkingPattern(
+                    normalLights,
+                    LEDSubsystem_WPIlib.LEDTarget.SIDES,
+                    LEDPattern.solid(LightsConstants.RBGColors.get("red")),
+                    0.5,
+                    0.5
+                ).schedule();
+            }
+        } 
+        else if (!shiftWarning_advised && shiftWarning_active) {
+            shiftWarning_active = false;
+                new ResetLED(normalLights, LEDSubsystem_WPIlib.LEDTarget.SIDES).schedule();
+        }
+    }
+
     /** Periodic update wrapper. */
     public void updateAll() {
         updateDriverStation();
@@ -291,27 +308,11 @@ public class MatchInformation extends SubsystemBase{
         updatePhase();
         updateHubLogic();
         updateFlags();
+        updateShiftWarning();
     }
 
     @Override
     public void periodic() {
         updateAll();
-        //  else {
-        //     if (LEDSubsystem_WPIlib.brightness != LightsConstants.led_brightness){
-        //         normalLights.updateBrightness(50);
-        //     }
-        // }
-    }
-    public String warningLight() {
-        if (shouldWarn) {
-            normalLights.updateBrightness(100);
-            if (warning){
-                return "G";
-            } else {
-                return "R";
-            }
-        } else {
-            return "n";
-        }
     }
 }

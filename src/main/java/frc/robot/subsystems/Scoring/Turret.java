@@ -37,12 +37,14 @@ import frc.robot.Constants.TurretConstants.TurretWantedState;
 import frc.robot.Constants.VisionConstants;
 import frc.robot.subsystems.Drive.CommandSwerveDrivetrain;
 import frc.robot.subsystems.Lights.LEDSubsystem_WPIlib;
+import frc.robot.subsystems.Lights.LEDSubsystem_WPIlib.LEDTarget;
 import frc.robot.Constants.TurretConstants.SystemState;
 import frc.util.LoggedTunableNumber;
 
 public class Turret extends SubsystemBase {
   private final CommandSwerveDrivetrain drivetrain;
   private final LEDSubsystem_WPIlib leds;
+  private LEDTarget currentLEDTarget = LEDTarget.SIDES;
   /* MOTORS */
   private TalonFX turretMotor = new TalonFX(TurretConstants.turretMotorID, "rio");
   private TalonFXConfiguration turretMotorConfig = new TalonFXConfiguration();

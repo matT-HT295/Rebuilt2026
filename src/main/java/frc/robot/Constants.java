@@ -241,7 +241,7 @@ public final class Constants {
     public static Distance spacing = Meters.of(1 / 60);   // (1 / 60) - 60 leds per 1m strip [Spacing: 1m/#ofLEDs]
     // LED Strip
     public static int led_port = 0;
-    public static int led_length = 48;   // 48 LEDs, 24 a side
+    public static int led_length = 20;   // 48 LEDs, 24 a side
     public static int led_brightness = 50;
     // Signal LED Sector (on shooter)
     public static int signal_length = 10;   // 10, 5 a side

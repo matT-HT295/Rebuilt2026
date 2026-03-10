@@ -6,11 +6,13 @@ import edu.wpi.first.wpilibj.LEDPattern;
 
 public class RunPattern extends Command {
     private final LEDSubsystem_WPIlib ledSubsystem;
+    private final LEDSubsystem_WPIlib.LEDTarget target;
     private final LEDPattern pattern;
     private final boolean animated;
 
-    public RunPattern(LEDSubsystem_WPIlib subsystem, LEDPattern pattern, boolean animated) {
+    public RunPattern(LEDSubsystem_WPIlib subsystem, LEDSubsystem_WPIlib.LEDTarget target, LEDPattern pattern, boolean animated) {
         this.ledSubsystem = subsystem;
+        this.target = target;
         this.pattern = pattern;
         this.animated = animated;
         addRequirements(subsystem);
@@ -18,7 +20,7 @@ public class RunPattern extends Command {
 
     @Override
     public void initialize() {
-        ledSubsystem.runPattern(pattern, animated);
+        ledSubsystem.runPattern(target, pattern, animated);
     }
 
     @Override

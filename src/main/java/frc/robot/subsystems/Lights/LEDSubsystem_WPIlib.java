@@ -1,26 +1,22 @@
 package frc.robot.subsystems.Lights;
 
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.Constants.LightsConstants;
-//LED Imports
-//import edu.wpi.first.units.Units.*;
-import edu.wpi.first.wpilibj.LEDPattern;
-import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.util.Color;
-
-import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.Percent;
 import static edu.wpi.first.units.Units.Second;
 import static edu.wpi.first.units.Units.Seconds;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.AddressableLED;
 import edu.wpi.first.wpilibj.AddressableLEDBuffer;
 import edu.wpi.first.wpilibj.AddressableLEDBufferView;
+//LED Imports
+//import edu.wpi.first.units.Units.*;
+import edu.wpi.first.wpilibj.LEDPattern;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.util.Color;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants.LightsConstants;
 
 public class LEDSubsystem_WPIlib extends SubsystemBase {
   // edu.wpi.first.wpilibj.AddressableLED
@@ -47,20 +43,30 @@ public class LEDSubsystem_WPIlib extends SubsystemBase {
   private final AddressableLEDBufferView m_signalBuffer; // The buffer for the signal LEDs (last 10 LEDs)
 
   // HANDLERS =============================================================
-  private final Timer timer = new Timer(); // WPILib Timer
   private final Random random = new Random();
 
+  public enum LEDTarget {
+    SIDES,
+    SIGNAL
+  }
+
   // LED BUFFER STATES ====================================================
-  private boolean running_AnimatedPattern = false;
-  private LEDPattern animatedPattern;
-  // Twinkle pattern state variables
-  private boolean running_TwinklePattern = false;
-  private double twinklePeriod = 0;
-  private Color twinkleBaseColor = null;
-  private Color twinkleColor = null;
-  private boolean[] twinkleMask; // fast lookup instead of List
-  private double[] twinklePhaseOffset; // each LED has independent phase
-  private int twinkle_Count = 10; // number of LEDs to twinkle at a time, can be tuned
+  private class LEDState {
+    Timer timer = new Timer();
+    boolean running_AnimatedPattern = false;
+    LEDPattern animatedPattern;
+    // Twinkle pattern state variables
+    boolean running_TwinklePattern = false;
+    double twinklePeriod = 0;
+    Color twinkleBaseColor = null;
+    Color twinkleColor = null;
+    boolean[] twinkleMask; // fast lookup instead of List
+    double[] twinklePhaseOffset; // each LED has independent phase
+    int twinkle_Count = 10; // number of LEDs to twinkle at a time, can be tuned
+  }
+
+  private final LEDState m_signalBuffer_State = new LEDState();
+  private final LEDState m_sidesBuffer_State = new LEDState();
 
   public LEDSubsystem_WPIlib() {
     // LED AND BUFFERS ============================================================
@@ -73,19 +79,9 @@ public class LEDSubsystem_WPIlib extends SubsystemBase {
     m_led.setData(m_ledbuffer);
     m_led.start();
 
-    // Twinkle Pattern
-    running_AnimatedPattern = false;
-    running_TwinklePattern = false;
-    twinkleBaseColor = null;
-    twinkleColor = null;
-    twinklePeriod = 0;
-    animatedPattern = null;
-    twinkleMask = new boolean[kLength];
-    twinklePhaseOffset = new double[kLength];
-
     // To get color, use: LightsConstants.RBGColors.get("gold")
 
-    LED_Breathing(LEDPattern.rainbow(255, 100), 2.5);
+    LED_Breathing(LEDTarget.SIDES, LEDPattern.solid(LightsConstants.RBGColors.get("red")), 2.5);
     // LED_Twinkle(LightsConstants.RBGColors.get("black");
     // LED_ScrollPatternRelative(LEDPattern.rainbow(255, 120), 100);
   }
@@ -96,17 +92,19 @@ public class LEDSubsystem_WPIlib extends SubsystemBase {
    * restart.
    */
   public void LED_Disable() {
-    stopTwinkle();
-    runPattern(LEDPattern.solid(LightsConstants.GRBColors.get("black")), false);
+    stopTwinkle(LEDTarget.SIDES);
+    stopTwinkle(LEDTarget.SIGNAL);
+    runPattern(LEDTarget.SIDES, LEDPattern.solid(LightsConstants.GRBColors.get("black")), false);
+    runPattern(LEDTarget.SIGNAL, LEDPattern.solid(LightsConstants.GRBColors.get("black")), false);
     m_led.stop();
   }
 
   /**
-   * Resetting LED strip - LES set to solid black.
+   * Resetting LED strip - LED set to solid black.
    */
-  public void LED_Reset() {
-    stopTwinkle();
-    runPattern(LEDPattern.solid(LightsConstants.GRBColors.get("black")), false);
+  public void LED_Reset(LEDTarget target) {
+    stopTwinkle(target);
+    runPattern(target, LEDPattern.solid(LightsConstants.GRBColors.get("black")), false);
   }
 
   /**
@@ -114,8 +112,8 @@ public class LEDSubsystem_WPIlib extends SubsystemBase {
    * 
    * @param color the color of the pattern
    */
-  public void LED_SolidColor(Color color) {
-    runPattern(LEDPattern.solid(color), false);
+  public void LED_SolidColor(LEDTarget target, Color color) {
+    runPattern(target, LEDPattern.solid(color), false);
   }
 
   /**
@@ -124,10 +122,11 @@ public class LEDSubsystem_WPIlib extends SubsystemBase {
    * @param pattern   the LED pattern to run
    * @param magnitude for frequency calculation [/s]
    */
-  public void LED_ScrollPatternRelative(LEDPattern pattern, double magnitude) {
-    // LEDPattern m_scrollingPattern = pattern.scrollAtAbsoluteSpeed(MetersPerSecond.of(speed), kLedSpacing);
+  public void LED_ScrollPatternRelative(LEDTarget target, LEDPattern pattern, double magnitude) {
+    // LEDPattern m_scrollingPattern =
+    // pattern.scrollAtAbsoluteSpeed(MetersPerSecond.of(speed), kLedSpacing);
     LEDPattern m_scrollingPattern = pattern.scrollAtRelativeSpeed(Percent.per(Second).of(magnitude));
-    runPattern(m_scrollingPattern, true);
+    runPattern(target, m_scrollingPattern, true);
     // System.out.println("Scroll function executed!!!!!!!!!!!!");
   }
 
@@ -138,9 +137,9 @@ public class LEDSubsystem_WPIlib extends SubsystemBase {
    * @param onTime  the time the LED stays on in [s]
    * @param offTime the time the LED stays off in [s]
    */
-  public void LED_Blinking(LEDPattern pattern, double onTime, double offTime) {
+  public void LED_Blinking(LEDTarget target, LEDPattern pattern, double onTime, double offTime) {
     LEDPattern m_blinkingPattern = pattern.blink(Seconds.of(onTime), Seconds.of(offTime));
-    runPattern(m_blinkingPattern, true);
+    runPattern(target, m_blinkingPattern, true);
   }
 
   /**
@@ -149,9 +148,9 @@ public class LEDSubsystem_WPIlib extends SubsystemBase {
    * @param pattern the LED pattern to run
    * @param period  the time of one full cycle in [s]
    */
-  public void LED_Breathing(LEDPattern pattern, double period) {
-    LEDPattern m_breathingPattern = pattern.breathe(Seconds.of(period));
-    runPattern(m_breathingPattern, true);
+  public void LED_Breathing(LEDTarget target, LEDPattern pattern, double period) {
+    LEDPattern breathing = pattern.breathe(Seconds.of(period));
+    runPattern(target, breathing, true);
   }
 
   /**
@@ -161,92 +160,124 @@ public class LEDSubsystem_WPIlib extends SubsystemBase {
    * @param twinkleColor the color of twinkling LED's
    * @param period       the time of one full cycle in [s]
    */
-  public void LED_Twinkle(Color baseColor, Color twinkleColor, double period) {
-    stopTwinkle();
+  public void LED_Twinkle(
+      LEDTarget target,
+      Color baseColor,
+      Color twinkleColor,
+      double period) {
 
-    this.twinkleBaseColor = baseColor;
-    this.twinkleColor = twinkleColor;
-    this.twinklePeriod = period;
+    LEDState state = getState(target);
+    AddressableLEDBufferView buffer = getBuffer(target);
 
-    running_TwinklePattern = true;
+    state.running_TwinklePattern = true;
+    state.running_AnimatedPattern = false;
 
-    timer.reset();
-    timer.start();
+    state.timer.reset();
+    state.timer.start();
 
-    randomizeTwinkleLEDs();
+    state.twinkleBaseColor = baseColor;
+    state.twinkleColor = twinkleColor;
+    state.twinklePeriod = period;
+
+    int length = buffer.getLength();
+    state.twinkleMask = new boolean[length];
+    state.twinklePhaseOffset = new double[length];
+
+    randomizeTwinkleLEDs(state, length);
   }
 
   /**
    * Stops the twinkle effect by resetting all twinkle-related state.
    */
-  public void stopTwinkle() {
-    running_TwinklePattern = false;
+  public void stopTwinkle(LEDTarget target) {
 
-    for (int i = 0; i < kLength; i++) {
-      twinkleMask[i] = false;
-      twinklePhaseOffset[i] = 0;
+    LEDState state = getState(target);
+
+    state.running_TwinklePattern = false;
+
+    if (state.timer.isRunning()) {
+      state.timer.stop();
+      state.timer.reset();
     }
-    timer.stop();
-    timer.reset();
+
+    if (state.twinkleMask != null) {
+      for (int i = 0; i < state.twinkleMask.length; i++) {
+        state.twinkleMask[i] = false;
+        state.twinklePhaseOffset[i] = 0;
+      }
+    }
   }
 
   @Override
   public void periodic() {
-    boolean anyActive = running_AnimatedPattern || running_TwinklePattern;
-    if (!anyActive) {
-      return; // nothing to update
+    updateBuffer(m_sidesBuffer, m_sidesBuffer_State);
+    updateBuffer(m_signalBuffer, m_signalBuffer_State);
+    m_led.setData(m_ledbuffer);
+  }
+
+  /**
+   * Updates the LED buffer based on the current state of the patterns.
+   * It applies the animated pattern if it's running, and then applies the
+   * twinkle effect if it's active.
+   * 
+   * @param buffer the LED buffer to update
+   * @param state  the current state of the LED patterns
+   */
+  private void updateBuffer(AddressableLEDBufferView buffer,
+      LEDState state) {
+
+    if (state.running_AnimatedPattern && state.animatedPattern != null) {
+      state.animatedPattern.applyTo(buffer);
     }
 
-    // 1) Base pattern (if any)
-    if (running_AnimatedPattern && animatedPattern != null) {
-      animatedPattern.applyTo(m_ledbuffer);
-    }
+    if (state.running_TwinklePattern) {
 
-    // 2) Twinkle overlay (if enabled)
-    if (running_TwinklePattern) {
-      double t = timer.get();
+      double t = state.timer.get();
 
-      for (int i = 0; i < kLength; i++) {
-        if (twinkleMask[i]) {
-          double phase = ((timer.get() + twinklePhaseOffset[i]) % twinklePeriod) / twinklePeriod;
-          double b = 0.5 - 0.5 * Math.cos(phase * 2 * Math.PI); // double b = 0.5 + 0.5 * Math.sin(phase * 2 * Math.PI);
-                                                                // OR double b = 0.5 - 0.5 * Math.cos(phase * 2 * Math.PI);
+      for (int i = 0; i < buffer.getLength(); i++) {
+
+        if (state.twinkleMask[i]) {
+
+          double phase = ((t + state.twinklePhaseOffset[i])
+              % state.twinklePeriod) / state.twinklePeriod;
+
+          double b = 0.5 - 0.5 * Math.cos(phase * 2 * Math.PI);
 
           Color c = new Color(
-              twinkleColor.red * b,
-              twinkleColor.green * b,
-              twinkleColor.blue * b);
-          m_ledbuffer.setLED(i, c);
-        } else if (!running_AnimatedPattern) {
-          // Only force base color when there is NO animated pattern underneath
-          m_ledbuffer.setLED(i, twinkleBaseColor);
+              state.twinkleColor.red * b,
+              state.twinkleColor.green * b,
+              state.twinkleColor.blue * b);
+
+          buffer.setLED(i, c);
+
+        } else if (!state.running_AnimatedPattern) {
+
+          buffer.setLED(i, state.twinkleBaseColor);
         }
       }
 
-      if (t > twinklePeriod) { // Was * 0.6, but it means leds can stop mid transition, so NO!
-        randomizeTwinkleLEDs();
-        timer.reset();
+      if (t >= state.twinklePeriod) {
+        randomizeTwinkleLEDs(state, buffer.getLength());
+        state.timer.reset();
       }
     }
-
-    // 3) Push buffer to hardware ONCE per loop
-    m_led.setData(m_ledbuffer);
   }
 
   /**
    * Random assignment of LEDs
    */
-  private void randomizeTwinkleLEDs() {
-    for (int i = 0; i < kLength; i++) {
-      twinkleMask[i] = false;
-    }
-    int max = Math.min(twinkle_Count, kLength);
-    for (int i = 0; i < max; i++) {
-      int index = random.nextInt(kLength);
-      twinkleMask[index] = true;
+  private void randomizeTwinkleLEDs(LEDState state, int length) {
 
-      // random phase so LEDs do not sync
-      twinklePhaseOffset[index] = -random.nextDouble() * twinklePeriod * 0.5;
+    for (int i = 0; i < length; i++) {
+      state.twinkleMask[i] = false;
+    }
+
+    int max = Math.min(state.twinkle_Count, length);
+
+    for (int i = 0; i < max; i++) {
+      int index = random.nextInt(length);
+      state.twinkleMask[index] = true;
+      state.twinklePhaseOffset[index] = -random.nextDouble() * state.twinklePeriod * 0.5;
     }
   }
 
@@ -261,20 +292,41 @@ public class LEDSubsystem_WPIlib extends SubsystemBase {
    * @implNote Recomended pattern input (rainbow): private final LEDPattern
    *           m_rainbow = LEDPattern.rainbow(255, 128);
    */
-  public void runPattern(LEDPattern pattern, boolean animated) {
-    stopTwinkle();
+  public void runPattern(LEDTarget target, LEDPattern pattern, boolean animated) {
+    LEDState state = getState(target);
+    AddressableLEDBufferView buffer = getBuffer(target);
+
+    // Stop twinkle only for this buffer
+    state.running_TwinklePattern = false;
+    state.timer.stop();
+    state.timer.reset();
+
     if (animated) {
-      animatedPattern = pattern.atBrightness(Percent.of(brightness));
-      running_AnimatedPattern = true;
+      state.animatedPattern = pattern.atBrightness(Percent.of(brightness));
+      state.running_AnimatedPattern = true;
     } else {
-      animatedPattern = null;
-      running_AnimatedPattern = false;
-      pattern.atBrightness(Percent.of(brightness)).applyTo(m_ledbuffer);
-      m_led.setData(m_ledbuffer);
-      // System.out.println("And executed proprely!!!!! Animated:" +
-      // running_AnimatedPattern);
+      state.animatedPattern = null;
+      state.running_TwinklePattern = false;
+      pattern.atBrightness(Percent.of(brightness)).applyTo(buffer);
     }
-    // return run(() -> pattern.applyTo(m_ledbuffer));
+  }
+
+  /**
+   * Helper functions to get the state and buffer based on the target enum.
+   */
+  private LEDState getState(LEDTarget target) {
+    return target == LEDTarget.SIDES
+        ? m_sidesBuffer_State
+        : m_signalBuffer_State;
+  }
+
+  /**
+   * Helper function to get the buffer based on the target enum.
+   */
+  private AddressableLEDBufferView getBuffer(LEDTarget target) {
+    return target == LEDTarget.SIDES
+        ? m_sidesBuffer
+        : m_signalBuffer;
   }
 
   public void updateBrightness(int newBrightness) {
