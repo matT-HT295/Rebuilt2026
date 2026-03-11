@@ -21,7 +21,6 @@ import frc.util.Point;
 import frc.util.PolynomialRegression;
 
 import java.util.Arrays;
-import java.util.List;
 // Lights
 import java.util.Map;
 import static edu.wpi.first.units.Units.Meters;

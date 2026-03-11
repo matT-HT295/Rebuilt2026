@@ -14,24 +14,20 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
-import com.pathplanner.lib.util.PathPlannerLogging;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
-import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.RobotController;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Subsystem;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
@@ -39,8 +35,6 @@ import frc.robot.Constants.ShooterConstants;
 import frc.robot.Constants.VisionConstants;
 import frc.robot.Constants.FieldConstants.ScoringZone;
 import frc.robot.subsystems.Drive.TunerConstants.TunerSwerveDrivetrain;
-
-
 
 /**
  * Class that extends the Phoenix 6 SwerveDrivetrain class and implements
@@ -69,7 +63,6 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     /* Keep track if we've ever applied the operator perspective before or not */
     private boolean m_hasAppliedOperatorPerspective = false;
 
-
     /* VISION RELATED METHODS */
     public Pose2d getPose() {
         return this.getState().Pose;
@@ -77,21 +70,21 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
     public ScoringZone getZone() {
         Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
-        if(alliance.equals(Alliance.Blue)) {
-            if(0 < getPose().getX() && getPose().getX() < 3.6) {
+        if (alliance.equals(Alliance.Blue)) {
+            if (0 < getPose().getX() && getPose().getX() < 3.6) {
                 return ScoringZone.BLUE_HUB;
             } else {
-                if(4.03 < getPose().getY()) {
+                if (4.03 < getPose().getY()) {
                     return ScoringZone.BLUE_PASSING_2;
                 } else {
                     return ScoringZone.BLUE_PASSING_1;
                 }
             }
         } else {
-            if(13 < getPose().getX() && getPose().getX() < 16.6) {
+            if (13 < getPose().getX() && getPose().getX() < 16.6) {
                 return ScoringZone.RED_HUB;
             } else {
-                if(4.03 < getPose().getY()) {
+                if (4.03 < getPose().getY()) {
                     return ScoringZone.RED_PASSING_2;
                 } else {
                     return ScoringZone.RED_PASSING_1;
@@ -99,7 +92,6 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
             }
         }
     }
-
 
     public boolean isInAllianceZone() {
         double xDistance = getPose().getX();
@@ -109,8 +101,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
             } else {
                 return false;
             }
-        }
-        else if (allianceColor.equals(Alliance.Blue)) {
+        } else if (allianceColor.equals(Alliance.Blue)) {
             if (xDistance > 12.53 && xDistance < 16) {
                 return true;
             } else {
@@ -130,16 +121,17 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         double xSpeed = getState().Speeds.vxMetersPerSecond;
         double ySpeed = getState().Speeds.vyMetersPerSecond;
         double rotSpeed = getState().Speeds.omegaRadiansPerSecond;
-        ChassisSpeeds fieldCentric = ChassisSpeeds.fromRobotRelativeSpeeds(xSpeed, ySpeed, rotSpeed, getCurrentTurretPose().getRotation());
-        double futurePoseX = turretPose.getX() + fieldCentric.vxMetersPerSecond*timeOfFlight;
-        double futurePoseY = turretPose.getY() + fieldCentric.vyMetersPerSecond*timeOfFlight;
-        double futurePoseRot = turretPose.getRotation().getRadians() + fieldCentric.omegaRadiansPerSecond*timeOfFlight;
+        ChassisSpeeds fieldCentric = ChassisSpeeds.fromRobotRelativeSpeeds(xSpeed, ySpeed, rotSpeed,
+                getCurrentTurretPose().getRotation());
+        double futurePoseX = turretPose.getX() + fieldCentric.vxMetersPerSecond * timeOfFlight;
+        double futurePoseY = turretPose.getY() + fieldCentric.vyMetersPerSecond * timeOfFlight;
+        double futurePoseRot = turretPose.getRotation().getRadians()
+                + fieldCentric.omegaRadiansPerSecond * timeOfFlight;
         Pose2d futurePose = new Pose2d(futurePoseX, futurePoseY, Rotation2d.fromRadians(futurePoseRot));
         // Pose2d futurePose = turretPose.plus(
-        //     new Transform2d(new Translation2d(-xSpeed, -ySpeed).times(timeOfFlight),
-        //     new Rotation2d(-rotSpeed).times(timeOfFlight))
+        // new Transform2d(new Translation2d(-xSpeed, -ySpeed).times(timeOfFlight),
+        // new Rotation2d(-rotSpeed).times(timeOfFlight))
         // );
-        
 
         TheField.getObject("turret pose").setPose(turretPose);
         TheField.getObject("turret pose").setPose(futurePose);
@@ -155,81 +147,69 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         // Hub position
         Translation2d aimingTarget;
         if (whereToAim == "hub") {
-            if(DriverStation.getAlliance().get() == Alliance.Red) {
+            if (DriverStation.getAlliance().get() == Alliance.Red) {
                 aimingTarget = VisionConstants.RED_HUB_POSE;
             } else {
                 aimingTarget = VisionConstants.BLUE_HUB_POSE;
             }
         } else if (whereToAim == "pass") {
-            if(DriverStation.getAlliance().get() == Alliance.Red) {
-                if(getPose().getY() > 4.03) {
+            if (DriverStation.getAlliance().get() == Alliance.Red) {
+                if (getPose().getY() > 4.03) {
                     aimingTarget = VisionConstants.RED_PASS_SPOT_1;
                 } else {
                     aimingTarget = VisionConstants.RED_PASS_SPOT_2;
                 }
             } else {
-                if(getPose().getY() > 4.03) {
+                if (getPose().getY() > 4.03) {
                     aimingTarget = VisionConstants.BLUE_PASS_SPOT_1;
                 } else {
                     aimingTarget = VisionConstants.BLUE_PASS_SPOT_2;
                 }
             }
-        }
-        else {
+        } else {
             aimingTarget = VisionConstants.RED_HUB_POSE;
         }
-        
 
         // Vector from turret to hub
-        Translation2d toTarget =
-            aimingTarget.minus(turretPose.getTranslation());
+        Translation2d toTarget = aimingTarget.minus(turretPose.getTranslation());
 
         double distance = toTarget.getNorm();
 
         // Time of flight from your interpolation table
-        double timeOfFlight =
-            ShooterConstants.timeOfFlightInterpolation
+        double timeOfFlight = ShooterConstants.timeOfFlightInterpolation
                 .getPrediction(distance);
 
         // Convert robot speeds to field relative
         // ChassisSpeeds fieldSpeeds =
-        //     ChassisSpeeds.fromRobotRelativeSpeeds(
-        //         getState().Speeds,
-        //         getPose().getRotation()
-        //     );
+        // ChassisSpeeds.fromRobotRelativeSpeeds(
+        // getState().Speeds,
+        // getPose().getRotation()
+        // );
         ChassisSpeeds fieldSpeeds = getState().Speeds;
         // Robot translational velocity
-        Translation2d robotVelocity =
-            new Translation2d(
+        Translation2d robotVelocity = new Translation2d(
                 fieldSpeeds.vxMetersPerSecond,
-                fieldSpeeds.vyMetersPerSecond
-            );
+                fieldSpeeds.vyMetersPerSecond);
 
         // --- TRANSLATIONAL SOTF CORRECTION ---
 
-        Translation2d translationalCorrection =
-            robotVelocity.times(timeOfFlight);
+        Translation2d translationalCorrection = robotVelocity.times(timeOfFlight);
 
-       // --- ROTATIONAL SOTF CORRECTION ---
+        // --- ROTATIONAL SOTF CORRECTION ---
 
-double omega = fieldSpeeds.omegaRadiansPerSecond;
+        double omega = fieldSpeeds.omegaRadiansPerSecond;
 
-Translation2d turretOffset =
-    turretPose.getTranslation().minus(getPose().getTranslation());
+        Translation2d turretOffset = turretPose.getTranslation().minus(getPose().getTranslation());
 
-Translation2d rotationalVelocity =
-    new Translation2d(
-        -omega * turretOffset.getY(),
-         omega * turretOffset.getX()
-    );
+        Translation2d rotationalVelocity = new Translation2d(
+                -omega * turretOffset.getY(),
+                omega * turretOffset.getX());
 
-Translation2d rotationalCorrection =
-    rotationalVelocity.times(timeOfFlight);
+        Translation2d rotationalCorrection = rotationalVelocity.times(timeOfFlight);
 
         // --- COMBINED CORRECTION ---
 
-        Translation2d correctedVector =
-            toTarget
+        Translation2d correctedVector = toTarget
                 .minus(translationalCorrection)
                 .minus(rotationalCorrection);
 
@@ -238,92 +218,89 @@ Translation2d rotationalCorrection =
 
         // Debug visualization
         TheField.getObject("turret pose")
-            .setPose(turretPose);
+                .setPose(turretPose);
 
         TheField.getObject("corrected shot vector")
-            .setPose(
-                new Pose2d(
-                    turretPose.getTranslation().plus(correctedVector),
-                    aimAngle
-                )
-            );
+                .setPose(
+                        new Pose2d(
+                                turretPose.getTranslation().plus(correctedVector),
+                                aimAngle));
 
         return correctedVector;
     }
 
-//     public Rotation2d getSOTFTurretAngle() {
+    // public Rotation2d getSOTFTurretAngle() {
 
-//     Pose2d turretPose = getCurrentTurretPose();
+    // Pose2d turretPose = getCurrentTurretPose();
 
-//     Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
+    // Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
 
-//     Translation2d realTarget =
-//         alliance == Alliance.Red
-//             ? VisionConstants.RED_HUB_POSE
-//             : VisionConstants.BLUE_HUB_POSE;
+    // Translation2d realTarget =
+    // alliance == Alliance.Red
+    // ? VisionConstants.RED_HUB_POSE
+    // : VisionConstants.BLUE_HUB_POSE;
 
-//     Translation2d turretPos = turretPose.getTranslation();
+    // Translation2d turretPos = turretPose.getTranslation();
 
-//     // Convert robot velocity to field frame
-//     ChassisSpeeds fieldSpeeds =
-//         ChassisSpeeds.fromRobotRelativeSpeeds(
-//             getState().Speeds,
-//             getPose().getRotation()
-//         );
+    // // Convert robot velocity to field frame
+    // ChassisSpeeds fieldSpeeds =
+    // ChassisSpeeds.fromRobotRelativeSpeeds(
+    // getState().Speeds,
+    // getPose().getRotation()
+    // );
 
-//     Translation2d robotVelocity =
-//         new Translation2d(
-//             fieldSpeeds.vxMetersPerSecond,
-//             fieldSpeeds.vyMetersPerSecond
-//         );
+    // Translation2d robotVelocity =
+    // new Translation2d(
+    // fieldSpeeds.vxMetersPerSecond,
+    // fieldSpeeds.vyMetersPerSecond
+    // );
 
-//     double omega = fieldSpeeds.omegaRadiansPerSecond;
+    // double omega = fieldSpeeds.omegaRadiansPerSecond;
 
-//     // turret offset from robot center
-//     Translation2d turretOffset =
-//         VisionConstants.turretToCenter.getTranslation();
+    // // turret offset from robot center
+    // Translation2d turretOffset =
+    // VisionConstants.turretToCenter.getTranslation();
 
-//     // rotational velocity of turret
-//     Translation2d rotationalVelocity =
-//         new Translation2d(
-//             -omega * turretOffset.getY(),
-//              omega * turretOffset.getX()
-//         );
+    // // rotational velocity of turret
+    // Translation2d rotationalVelocity =
+    // new Translation2d(
+    // -omega * turretOffset.getY(),
+    // omega * turretOffset.getX()
+    // );
 
-//     Translation2d totalRobotVelocity =
-//         robotVelocity.plus(rotationalVelocity);
+    // Translation2d totalRobotVelocity =
+    // robotVelocity.plus(rotationalVelocity);
 
-//     Translation2d virtualTarget = realTarget;
+    // Translation2d virtualTarget = realTarget;
 
-//     // ITERATIVE SOLVE (2 passes)
-//     for (int i = 0; i < 2; i++) {
+    // // ITERATIVE SOLVE (2 passes)
+    // for (int i = 0; i < 2; i++) {
 
-//         Translation2d toTarget =
-//             virtualTarget.minus(turretPos);
+    // Translation2d toTarget =
+    // virtualTarget.minus(turretPos);
 
-//         double distance = toTarget.getNorm();
+    // double distance = toTarget.getNorm();
 
-//         double timeOfFlight =
-//             ShooterConstants.timeOfFlightInterpolation
-//                 .getPrediction(distance);
+    // double timeOfFlight =
+    // ShooterConstants.timeOfFlightInterpolation
+    // .getPrediction(distance);
 
-//         virtualTarget =
-//             realTarget.minus(
-//                 totalRobotVelocity.times(timeOfFlight)
-//             );
-//     }
+    // virtualTarget =
+    // realTarget.minus(
+    // totalRobotVelocity.times(timeOfFlight)
+    // );
+    // }
 
-//     Translation2d correctedVector =
-//         virtualTarget.minus(turretPos);
+    // Translation2d correctedVector =
+    // virtualTarget.minus(turretPos);
 
-//     Rotation2d turretAngle =
-//         correctedVector.getAngle()
-//             .minus(getPose().getRotation());
+    // Rotation2d turretAngle =
+    // correctedVector.getAngle()
+    // .minus(getPose().getRotation());
 
-//     return turretAngle;
-//     }
+    // return turretAngle;
+    // }
 
-    
     public Pose2d getCurrentTurretPose() {
         Pose2d turretPose = getPose().transformBy(VisionConstants.turretToCenter);
         turretPose = turretPose.rotateAround(turretPose.getTranslation(), Rotation2d.k180deg);
@@ -331,55 +308,57 @@ Translation2d rotationalCorrection =
     }
 
     public Translation2d getHub() {
-        Translation2d goalLocation = 
-        DriverStation.getAlliance().get() == Alliance.Red ? 
-            VisionConstants.RED_HUB_POSE : 
-            VisionConstants.BLUE_HUB_POSE;
+        Translation2d goalLocation = DriverStation.getAlliance().get() == Alliance.Red ? VisionConstants.RED_HUB_POSE
+                : VisionConstants.BLUE_HUB_POSE;
         return goalLocation;
     }
 
-    //SOTF Solution 2
-    public double[] SOTFcalc() {
-                // 1. LATENCY COMP
-        double latency = 0.15; // Tuned constant
-        Translation2d futurePos = getTurretPose().getTranslation();
+    // SOTF Solution 2
+    // public double[] SOTFcalc() {
+    // // 1. LATENCY COMP
+    // double latency = 0.15; // Tuned constant
+    // Translation2d futurePos = getTurretPose().getTranslation();
 
-        // 2. GET TARGET VECTOR
-        Translation2d goalLocation = 
-        DriverStation.getAlliance().get() == Alliance.Red ? 
-            VisionConstants.RED_HUB_POSE : 
-            VisionConstants.BLUE_HUB_POSE;
+    // // 2. GET TARGET VECTOR
+    // Translation2d goalLocation = DriverStation.getAlliance().get() ==
+    // Alliance.Red ? VisionConstants.RED_HUB_POSE
+    // : VisionConstants.BLUE_HUB_POSE;
 
-        Translation2d targetVec = goalLocation.minus(futurePos);
-        double dist = targetVec.getNorm();
+    // Translation2d targetVec = goalLocation.minus(futurePos);
+    // double dist = targetVec.getNorm();
 
-        // 3. CALCULATE IDEAL SHOT (Stationary)
-        // Note: This returns HORIZONTAL velocity component
-        double idealHorizontalSpeed = ShooterConstants.shooterSpeedInterpolation.getPrediction(getDistanceFromHub());
+    // // 3. CALCULATE IDEAL SHOT (Stationary)
+    // // Note: This returns HORIZONTAL velocity component
+    // double idealHorizontalSpeed =
+    // ShooterConstants.shooterSpeedInterpolation.getPrediction(getDistanceFromHub());
 
-        // 4. VECTOR SUBTRACTION
-        Translation2d robotVelVec = new Translation2d(getState().Speeds.vxMetersPerSecond, getState().Speeds.vyMetersPerSecond);
-        Translation2d shotVec = targetVec.div(dist).times(idealHorizontalSpeed).minus(robotVelVec);
+    // // 4. VECTOR SUBTRACTION
+    // Translation2d robotVelVec = new
+    // Translation2d(getState().Speeds.vxMetersPerSecond,
+    // getState().Speeds.vyMetersPerSecond);
+    // Translation2d shotVec =
+    // targetVec.div(dist).times(idealHorizontalSpeed).minus(robotVelVec);
 
-        // 5. CONVERT TO CONTROLS
-        double turretAngle = shotVec.getAngle().getDegrees();
-        double newHorizontalSpeed = shotVec.getNorm();
+    // // 5. CONVERT TO CONTROLS
+    // double turretAngle = shotVec.getAngle().getDegrees();
+    // double newHorizontalSpeed = shotVec.getNorm();
 
-        // 6. SOLVE FOR NEW PITCH/RPM
-        // Assuming constant total exit velocity, variable hood:
-        double totalExitVelocity = 15.0; // m/s
-        // Clamp to avoid domain errors if we need more speed than possible
-        double ratio = Math.min(newHorizontalSpeed / totalExitVelocity, 1.0);
-        double newPitch = Math.acos(ratio);
+    // // 6. SOLVE FOR NEW PITCH/RPM
+    // // Assuming constant total exit velocity, variable hood:
+    // double totalExitVelocity = 15.0; // m/s
+    // // Clamp to avoid domain errors if we need more speed than possible
+    // double ratio = Math.min(newHorizontalSpeed / totalExitVelocity, 1.0);
+    // double newPitch = Math.acos(ratio);
 
-        // 7. SET OUTPUTS
-        double[] outputs = {turretAngle, Math.toDegrees(newPitch), ShooterConstants.shooterSpeedInterpolation.getPrediction(dist)};
-        return outputs;
-        // turret.setAngle(turretAngle);
-        // hood.setAngle(Math.toDegrees(newPitch));
-        // shooter.setRPM(calcRPM(totalExitVelocity));
+    // // 7. SET OUTPUTS
+    // double[] outputs = { turretAngle, Math.toDegrees(newPitch),
+    // ShooterConstants.shooterSpeedInterpolation.getPrediction(dist) };
+    // return outputs;
+    // // turret.setAngle(turretAngle);
+    // // hood.setAngle(Math.toDegrees(newPitch));
+    // // shooter.setRPM(calcRPM(totalExitVelocity));
 
-    }
+    // }
 
     public double getDistanceFromHub() {
         double distance = Math.hypot(getXfromHub(), getYfromHub());
@@ -389,7 +368,7 @@ Translation2d rotationalCorrection =
     public double getXfromLocation(Pose2d target) {
         double xDistance;
         Alliance allianceColor = DriverStation.getAlliance().get();
-        if(allianceColor == Alliance.Red) {
+        if (allianceColor == Alliance.Red) {
             xDistance = Math.abs(target.getX() - getCurrentTurretPose().getX());
         } else {
             xDistance = Math.abs(target.getX() - getCurrentTurretPose().getX());
@@ -400,7 +379,7 @@ Translation2d rotationalCorrection =
     public double getYfromLocation(Pose2d target) {
         double yDistance;
         Alliance allianceColor = DriverStation.getAlliance().get();
-        if(allianceColor == Alliance.Red) {
+        if (allianceColor == Alliance.Red) {
             yDistance = Math.abs(target.getY() - getCurrentTurretPose().getY());
         } else {
             yDistance = Math.abs(target.getY() - getCurrentTurretPose().getY());
@@ -412,7 +391,7 @@ Translation2d rotationalCorrection =
         double xDistance;
         Alliance allianceColor = DriverStation.getAlliance().get();
 
-        if(allianceColor == Alliance.Red) {
+        if (allianceColor == Alliance.Red) {
             xDistance = VisionConstants.RED_HUB_POSE.getX() - getCurrentTurretPose().getX();
         } else {
             xDistance = VisionConstants.BLUE_HUB_POSE.getX() - getCurrentTurretPose().getX();
@@ -424,7 +403,7 @@ Translation2d rotationalCorrection =
         double yDistance;
         Alliance allianceColor = DriverStation.getAlliance().get();
 
-        if(allianceColor == Alliance.Red) {
+        if (allianceColor == Alliance.Red) {
             yDistance = VisionConstants.RED_HUB_POSE.getY() - getCurrentTurretPose().getY();
         } else {
             yDistance = VisionConstants.BLUE_HUB_POSE.getY() - getCurrentTurretPose().getY();
@@ -454,7 +433,7 @@ Translation2d rotationalCorrection =
                     estPose,
                     Utils.fpgaToCurrentTime(visionEst.get().timestampSeconds),
                     estStdDevs);
-        }else if (visionEst2.isPresent() && visionEst3.isPresent()) {
+        } else if (visionEst2.isPresent() && visionEst3.isPresent()) {
             var estPose = vision.getPoseFromCams23();
             var estStdDevs = vision.getEstimationStdDevs(estPose);
             super.addVisionMeasurement(
@@ -468,7 +447,7 @@ Translation2d rotationalCorrection =
                     estPose,
                     Utils.fpgaToCurrentTime(visionEst.get().timestampSeconds),
                     estStdDevs);
-        }else if (visionEst.isPresent()) {
+        } else if (visionEst.isPresent()) {
             visionEst.ifPresent(est -> {
                 var estPose = est.estimatedPose.toPose2d();
                 var estStdDevs = vision.getEstimationStdDevs(estPose);
@@ -498,100 +477,98 @@ Translation2d rotationalCorrection =
         }
     }
 
-/* Pathplanner and CTRE Swerve config */
+    /* Pathplanner and CTRE Swerve config */
     private void configureAutoBuilder() {
         try {
             var config = RobotConfig.fromGUISettings();
             AutoBuilder.configure(
-                () -> getState().Pose,   // Supplier of current robot pose
-                this::resetPose,         // Consumer for seeding pose against auto
-                () -> getState().Speeds, // Supplier of current robot speeds
-                // Consumer of ChassisSpeeds and feedforwards to drive the robot
-                (speeds, feedforwards) -> setControl(
-                    m_pathApplyRobotSpeeds.withSpeeds(ChassisSpeeds.discretize(speeds, 0.020))
-                        .withWheelForceFeedforwardsX(feedforwards.robotRelativeForcesXNewtons())
-                        .withWheelForceFeedforwardsY(feedforwards.robotRelativeForcesYNewtons())
-                ),
-                new PPHolonomicDriveController(
-                    // PID constants for translation
-                    new PIDConstants(10, 0, 0),
-                    // PID constants for rotation
-                    new PIDConstants(7, 0, 0)
-                ),
-                config,
-                // Assume the path needs to be flipped for Red vs Blue, this is normally the case
-                () -> DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red,
-                this // Subsystem for requirements
+                    () -> getState().Pose, // Supplier of current robot pose
+                    this::resetPose, // Consumer for seeding pose against auto
+                    () -> getState().Speeds, // Supplier of current robot speeds
+                    // Consumer of ChassisSpeeds and feedforwards to drive the robot
+                    (speeds, feedforwards) -> setControl(
+                            m_pathApplyRobotSpeeds.withSpeeds(ChassisSpeeds.discretize(speeds, 0.020))
+                                    .withWheelForceFeedforwardsX(feedforwards.robotRelativeForcesXNewtons())
+                                    .withWheelForceFeedforwardsY(feedforwards.robotRelativeForcesYNewtons())),
+                    new PPHolonomicDriveController(
+                            // PID constants for translation
+                            new PIDConstants(10, 0, 0),
+                            // PID constants for rotation
+                            new PIDConstants(7, 0, 0)),
+                    config,
+                    // Assume the path needs to be flipped for Red vs Blue, this is normally the
+                    // case
+                    () -> DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red,
+                    this // Subsystem for requirements
             );
         } catch (Exception ex) {
-            DriverStation.reportError("Failed to load PathPlanner config and configure AutoBuilder", ex.getStackTrace());
+            DriverStation.reportError("Failed to load PathPlanner config and configure AutoBuilder",
+                    ex.getStackTrace());
         }
     }
-
 
     /* Swerve requests to apply during SysId characterization */
     private final SwerveRequest.SysIdSwerveTranslation m_translationCharacterization = new SwerveRequest.SysIdSwerveTranslation();
     private final SwerveRequest.SysIdSwerveSteerGains m_steerCharacterization = new SwerveRequest.SysIdSwerveSteerGains();
     private final SwerveRequest.SysIdSwerveRotation m_rotationCharacterization = new SwerveRequest.SysIdSwerveRotation();
 
-    /* SysId routine for characterizing translation. This is used to find PID gains for the drive motors. */
+    /*
+     * SysId routine for characterizing translation. This is used to find PID gains
+     * for the drive motors.
+     */
     private final SysIdRoutine m_sysIdRoutineTranslation = new SysIdRoutine(
-        new SysIdRoutine.Config(
-            null,        // Use default ramp rate (1 V/s)
-            Volts.of(4), // Reduce dynamic step voltage to 4 V to prevent brownout
-            null,        // Use default timeout (10 s)
-            // Log state with SignalLogger class
-            state -> SignalLogger.writeString("SysIdTranslation_State", state.toString())
-        ),
-        new SysIdRoutine.Mechanism(
-            output -> setControl(m_translationCharacterization.withVolts(output)),
-            null,
-            this
-        )
-    );
+            new SysIdRoutine.Config(
+                    null, // Use default ramp rate (1 V/s)
+                    Volts.of(4), // Reduce dynamic step voltage to 4 V to prevent brownout
+                    null, // Use default timeout (10 s)
+                    // Log state with SignalLogger class
+                    state -> SignalLogger.writeString("SysIdTranslation_State", state.toString())),
+            new SysIdRoutine.Mechanism(
+                    output -> setControl(m_translationCharacterization.withVolts(output)),
+                    null,
+                    this));
 
-    /* SysId routine for characterizing steer. This is used to find PID gains for the steer motors. */
+    /*
+     * SysId routine for characterizing steer. This is used to find PID gains for
+     * the steer motors.
+     */
     private final SysIdRoutine m_sysIdRoutineSteer = new SysIdRoutine(
-        new SysIdRoutine.Config(
-            null,        // Use default ramp rate (1 V/s)
-            Volts.of(7), // Use dynamic voltage of 7 V
-            null,        // Use default timeout (10 s)
-            // Log state with SignalLogger class
-            state -> SignalLogger.writeString("SysIdSteer_State", state.toString())
-        ),
-        new SysIdRoutine.Mechanism(
-            volts -> setControl(m_steerCharacterization.withVolts(volts)),
-            null,
-            this
-        )
-    );
+            new SysIdRoutine.Config(
+                    null, // Use default ramp rate (1 V/s)
+                    Volts.of(7), // Use dynamic voltage of 7 V
+                    null, // Use default timeout (10 s)
+                    // Log state with SignalLogger class
+                    state -> SignalLogger.writeString("SysIdSteer_State", state.toString())),
+            new SysIdRoutine.Mechanism(
+                    volts -> setControl(m_steerCharacterization.withVolts(volts)),
+                    null,
+                    this));
 
     /*
      * SysId routine for characterizing rotation.
-     * This is used to find PID gains for the FieldCentricFacingAngle HeadingController.
-     * See the documentation of SwerveRequest.SysIdSwerveRotation for info on importing the log to SysId.
+     * This is used to find PID gains for the FieldCentricFacingAngle
+     * HeadingController.
+     * See the documentation of SwerveRequest.SysIdSwerveRotation for info on
+     * importing the log to SysId.
      */
     private final SysIdRoutine m_sysIdRoutineRotation = new SysIdRoutine(
-        new SysIdRoutine.Config(
-            /* This is in radians per second², but SysId only supports "volts per second" */
-            Volts.of(Math.PI / 6).per(Second),
-            /* This is in radians per second, but SysId only supports "volts" */
-            Volts.of(Math.PI),
-            null, // Use default timeout (10 s)
-            // Log state with SignalLogger class
-            state -> SignalLogger.writeString("SysIdRotation_State", state.toString())
-        ),
-        new SysIdRoutine.Mechanism(
-            output -> {
-                /* output is actually radians per second, but SysId only supports "volts" */
-                setControl(m_rotationCharacterization.withRotationalRate(output.in(Volts)));
-                /* also log the requested output for SysId */
-                SignalLogger.writeDouble("Rotational_Rate", output.in(Volts));
-            },
-            null,
-            this
-        )
-    );
+            new SysIdRoutine.Config(
+                    /* This is in radians per second², but SysId only supports "volts per second" */
+                    Volts.of(Math.PI / 6).per(Second),
+                    /* This is in radians per second, but SysId only supports "volts" */
+                    Volts.of(Math.PI),
+                    null, // Use default timeout (10 s)
+                    // Log state with SignalLogger class
+                    state -> SignalLogger.writeString("SysIdRotation_State", state.toString())),
+            new SysIdRoutine.Mechanism(
+                    output -> {
+                        /* output is actually radians per second, but SysId only supports "volts" */
+                        setControl(m_rotationCharacterization.withRotationalRate(output.in(Volts)));
+                        /* also log the requested output for SysId */
+                        SignalLogger.writeDouble("Rotational_Rate", output.in(Volts));
+                    },
+                    null,
+                    this));
 
     /* The SysId routine to test */
     private SysIdRoutine m_sysIdRoutineToApply = m_sysIdRoutineTranslation;
@@ -599,17 +576,18 @@ Translation2d rotationalCorrection =
     /**
      * Constructs a CTRE SwerveDrivetrain using the specified constants.
      * <p>
-     * This constructs the underlying hardware devices, so users should not construct
-     * the devices themselves. If they need the devices, they can access them through
+     * This constructs the underlying hardware devices, so users should not
+     * construct
+     * the devices themselves. If they need the devices, they can access them
+     * through
      * getters in the classes.
      *
-     * @param drivetrainConstants   Drivetrain-wide constants for the swerve drive
-     * @param modules               Constants for each specific module
+     * @param drivetrainConstants Drivetrain-wide constants for the swerve drive
+     * @param modules             Constants for each specific module
      */
     public CommandSwerveDrivetrain(
-        SwerveDrivetrainConstants drivetrainConstants,
-        SwerveModuleConstants<?, ?, ?>... modules
-    ) {
+            SwerveDrivetrainConstants drivetrainConstants,
+            SwerveModuleConstants<?, ?, ?>... modules) {
         super(drivetrainConstants, modules);
         if (Utils.isSimulation()) {
             startSimThread();
@@ -619,8 +597,10 @@ Translation2d rotationalCorrection =
     /**
      * Constructs a CTRE SwerveDrivetrain using the specified constants.
      * <p>
-     * This constructs the underlying hardware devices, so users should not construct
-     * the devices themselves. If they need the devices, they can access them through
+     * This constructs the underlying hardware devices, so users should not
+     * construct
+     * the devices themselves. If they need the devices, they can access them
+     * through
      * getters in the classes.
      *
      * @param drivetrainConstants     Drivetrain-wide constants for the swerve drive
@@ -630,10 +610,9 @@ Translation2d rotationalCorrection =
      * @param modules                 Constants for each specific module
      */
     public CommandSwerveDrivetrain(
-        SwerveDrivetrainConstants drivetrainConstants,
-        double odometryUpdateFrequency,
-        SwerveModuleConstants<?, ?, ?>... modules
-    ) {
+            SwerveDrivetrainConstants drivetrainConstants,
+            double odometryUpdateFrequency,
+            SwerveModuleConstants<?, ?, ?>... modules) {
         super(drivetrainConstants, odometryUpdateFrequency, modules);
         if (Utils.isSimulation()) {
             startSimThread();
@@ -643,30 +622,38 @@ Translation2d rotationalCorrection =
     /**
      * Constructs a CTRE SwerveDrivetrain using the specified constants.
      * <p>
-     * This constructs the underlying hardware devices, so users should not construct
-     * the devices themselves. If they need the devices, they can access them through
+     * This constructs the underlying hardware devices, so users should not
+     * construct
+     * the devices themselves. If they need the devices, they can access them
+     * through
      * getters in the classes.
      *
-     * @param drivetrainConstants       Drivetrain-wide constants for the swerve drive
+     * @param drivetrainConstants       Drivetrain-wide constants for the swerve
+     *                                  drive
      * @param odometryUpdateFrequency   The frequency to run the odometry loop. If
-     *                                  unspecified or set to 0 Hz, this is 250 Hz on
+     *                                  unspecified or set to 0 Hz, this is 250 Hz
+     *                                  on
      *                                  CAN FD, and 100 Hz on CAN 2.0.
-     * @param odometryStandardDeviation The standard deviation for odometry calculation
-     *                                  in the form [x, y, theta]ᵀ, with units in meters
+     * @param odometryStandardDeviation The standard deviation for odometry
+     *                                  calculation
+     *                                  in the form [x, y, theta]ᵀ, with units in
+     *                                  meters
      *                                  and radians
-     * @param visionStandardDeviation   The standard deviation for vision calculation
-     *                                  in the form [x, y, theta]ᵀ, with units in meters
+     * @param visionStandardDeviation   The standard deviation for vision
+     *                                  calculation
+     *                                  in the form [x, y, theta]ᵀ, with units in
+     *                                  meters
      *                                  and radians
      * @param modules                   Constants for each specific module
      */
     public CommandSwerveDrivetrain(
-        SwerveDrivetrainConstants drivetrainConstants,
-        double odometryUpdateFrequency,
-        Matrix<N3, N1> odometryStandardDeviation,
-        Matrix<N3, N1> visionStandardDeviation,
-        SwerveModuleConstants<?, ?, ?>... modules
-    ) {
-        super(drivetrainConstants, odometryUpdateFrequency, odometryStandardDeviation, visionStandardDeviation, modules);
+            SwerveDrivetrainConstants drivetrainConstants,
+            double odometryUpdateFrequency,
+            Matrix<N3, N1> odometryStandardDeviation,
+            Matrix<N3, N1> visionStandardDeviation,
+            SwerveModuleConstants<?, ?, ?>... modules) {
+        super(drivetrainConstants, odometryUpdateFrequency, odometryStandardDeviation, visionStandardDeviation,
+                modules);
         if (Utils.isSimulation()) {
             startSimThread();
         }
@@ -675,7 +662,8 @@ Translation2d rotationalCorrection =
     }
 
     /**
-     * Returns a command that applies the specified control request to this swerve drivetrain.
+     * Returns a command that applies the specified control request to this swerve
+     * drivetrain.
      *
      * @param request Function returning the request to apply
      * @return Command to run
@@ -711,18 +699,21 @@ Translation2d rotationalCorrection =
         TheField.getObject("robot").setPose(getPose());
         /*
          * Periodically try to apply the operator perspective.
-         * If we haven't applied the operator perspective before, then we should apply it regardless of DS state.
-         * This allows us to correct the perspective in case the robot code restarts mid-match.
-         * Otherwise, only check and apply the operator perspective if the DS is disabled.
-         * This ensures driving behavior doesn't change until an explicit disable event occurs during testing.
+         * If we haven't applied the operator perspective before, then we should apply
+         * it regardless of DS state.
+         * This allows us to correct the perspective in case the robot code restarts
+         * mid-match.
+         * Otherwise, only check and apply the operator perspective if the DS is
+         * disabled.
+         * This ensures driving behavior doesn't change until an explicit disable event
+         * occurs during testing.
          */
         if (!m_hasAppliedOperatorPerspective || DriverStation.isDisabled()) {
             DriverStation.getAlliance().ifPresent(allianceColor -> {
                 setOperatorPerspectiveForward(
-                    allianceColor == Alliance.Red
-                        ? kRedAlliancePerspectiveRotation
-                        : kBlueAlliancePerspectiveRotation
-                );
+                        allianceColor == Alliance.Red
+                                ? kRedAlliancePerspectiveRotation
+                                : kBlueAlliancePerspectiveRotation);
                 m_hasAppliedOperatorPerspective = true;
             });
         }
@@ -744,11 +735,14 @@ Translation2d rotationalCorrection =
     }
 
     /**
-     * Adds a vision measurement to the Kalman Filter. This will correct the odometry pose estimate
+     * Adds a vision measurement to the Kalman Filter. This will correct the
+     * odometry pose estimate
      * while still accounting for measurement noise.
      *
-     * @param visionRobotPoseMeters The pose of the robot as measured by the vision camera.
-     * @param timestampSeconds The timestamp of the vision measurement in seconds.
+     * @param visionRobotPoseMeters The pose of the robot as measured by the vision
+     *                              camera.
+     * @param timestampSeconds      The timestamp of the vision measurement in
+     *                              seconds.
      */
     @Override
     public void addVisionMeasurement(Pose2d visionRobotPoseMeters, double timestampSeconds) {
@@ -756,32 +750,38 @@ Translation2d rotationalCorrection =
     }
 
     /**
-     * Adds a vision measurement to the Kalman Filter. This will correct the odometry pose estimate
+     * Adds a vision measurement to the Kalman Filter. This will correct the
+     * odometry pose estimate
      * while still accounting for measurement noise.
      * <p>
      * Note that the vision measurement standard deviations passed into this method
      * will continue to apply to future measurements until a subsequent call to
      * {@link #setVisionMeasurementStdDevs(Matrix)} or this method.
      *
-     * @param visionRobotPoseMeters The pose of the robot as measured by the vision camera.
-     * @param timestampSeconds The timestamp of the vision measurement in seconds.
-     * @param visionMeasurementStdDevs Standard deviations of the vision pose measurement
-     *     in the form [x, y, theta]ᵀ, with units in meters and radians.
+     * @param visionRobotPoseMeters    The pose of the robot as measured by the
+     *                                 vision camera.
+     * @param timestampSeconds         The timestamp of the vision measurement in
+     *                                 seconds.
+     * @param visionMeasurementStdDevs Standard deviations of the vision pose
+     *                                 measurement
+     *                                 in the form [x, y, theta]ᵀ, with units in
+     *                                 meters and radians.
      */
     @Override
     public void addVisionMeasurement(
-        Pose2d visionRobotPoseMeters,
-        double timestampSeconds,
-        Matrix<N3, N1> visionMeasurementStdDevs
-    ) {
-        super.addVisionMeasurement(visionRobotPoseMeters, Utils.fpgaToCurrentTime(timestampSeconds), visionMeasurementStdDevs);
+            Pose2d visionRobotPoseMeters,
+            double timestampSeconds,
+            Matrix<N3, N1> visionMeasurementStdDevs) {
+        super.addVisionMeasurement(visionRobotPoseMeters, Utils.fpgaToCurrentTime(timestampSeconds),
+                visionMeasurementStdDevs);
     }
 
     /**
      * Return the pose at a given timestamp, if the buffer is not empty.
      *
      * @param timestampSeconds The timestamp of the pose in seconds.
-     * @return The pose at the given timestamp (or Optional.empty() if the buffer is empty).
+     * @return The pose at the given timestamp (or Optional.empty() if the buffer is
+     *         empty).
      */
     @Override
     public Optional<Pose2d> samplePoseAt(double timestampSeconds) {

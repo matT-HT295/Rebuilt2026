@@ -5,17 +5,10 @@
 package frc.robot.subsystems.Intake;
 
 import com.ctre.phoenix6.StatusCode;
-import com.ctre.phoenix6.configs.MotionMagicConfigs;
-import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.ControlRequest;
-import com.ctre.phoenix6.controls.MotionMagicExpoVoltage;
-import com.ctre.phoenix6.controls.MotionMagicVelocityVoltage;
-import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.FeederConstants;
 import frc.robot.Constants.FeederConstants.FeederWantedState;
@@ -23,140 +16,127 @@ import frc.robot.Constants.FeederConstants.SystemState;
 import frc.robot.subsystems.Drive.CommandSwerveDrivetrain;
 import frc.robot.subsystems.Scoring.Shooter;
 import frc.robot.subsystems.Scoring.Turret;
-import frc.util.LoggedTunableNumber;
 
 public class Feeder extends SubsystemBase {
-  private Turret turret;
-  private Shooter shooter;
-  private CommandSwerveDrivetrain drivetrain;
-  /* MOTORS */
-  private TalonFX spindexerMotor = new TalonFX(FeederConstants.spindexerMotorID, "rio");
-  private TalonFXConfiguration spindexerMotorConfig = new TalonFXConfiguration();
-  private TalonFX towerMotor = new TalonFX(FeederConstants.towerMotorID, "rio");
-  private TalonFXConfiguration towerMotorConfig = new TalonFXConfiguration();
-  
-  //for velocity control
-  private double spindexerMotorSpeed = 0.0;
-  private double towerMotorSpeed = 0.0;
-  final MotionMagicVelocityVoltage mm_request = new MotionMagicVelocityVoltage(0);
-  //for position control
-  private double position = 0.0;
-  final MotionMagicExpoVoltage mmE_request = new MotionMagicExpoVoltage(0);
+    private Turret turret;
+    private Shooter shooter;
+    private CommandSwerveDrivetrain drivetrain;
 
-  /* PIDFF CONTROL */
-  private LoggedTunableNumber k_S = new LoggedTunableNumber("feeder_s", FeederConstants.feederSVA[0]);
-  private LoggedTunableNumber k_V = new LoggedTunableNumber("feeder_v", FeederConstants.feederSVA[1]);
-  private LoggedTunableNumber k_A = new LoggedTunableNumber("feeder_a", FeederConstants.feederSVA[2]);
-  private LoggedTunableNumber k_P = new LoggedTunableNumber("feeder_p", FeederConstants.feederPID[0]);
-  private LoggedTunableNumber k_I = new LoggedTunableNumber("feeder_i", FeederConstants.feederPID[1]);
-  private LoggedTunableNumber k_D = new LoggedTunableNumber("feeder_d", FeederConstants.feederPID[2]);
+    /* MOTORS */
+    private TalonFX spindexerMotor = new TalonFX(FeederConstants.spindexerMotorID, "rio");
+    private TalonFXConfiguration spindexerMotorConfig = new TalonFXConfiguration();
+    private TalonFX towerMotor = new TalonFX(FeederConstants.towerMotorID, "rio");
+    private TalonFXConfiguration towerMotorConfig = new TalonFXConfiguration();
 
-  /* STATES */
-  FeederWantedState wantedState = FeederWantedState.IDLE;
-  SystemState systemState = SystemState.IDLING;
+    // for velocity control
+    private double spindexerMotorSpeed = 0.0;
+    private double towerMotorSpeed = 0.0;
 
-  /** Creates a new Feeder */
-  public Feeder(Turret m_turret, Shooter m_shooter, CommandSwerveDrivetrain m_Drivetrain) {
-    this.turret = m_turret;
-    this.shooter = m_shooter;
-    this.drivetrain = m_Drivetrain;
-    /* SETUP CONFIG */
-    
-    // CURRENT LIMITS
-    spindexerMotorConfig.CurrentLimits.SupplyCurrentLimit = FeederConstants.SupplyCurrentLimit;
-    spindexerMotorConfig.CurrentLimits.StatorCurrentLimit = FeederConstants.StatorCurrentLimit;
-    towerMotorConfig.CurrentLimits.SupplyCurrentLimit = FeederConstants.SupplyCurrentLimit;
-    towerMotorConfig.CurrentLimits.StatorCurrentLimit = FeederConstants.StatorCurrentLimit;
+    /* STATES */
+    FeederWantedState wantedState = FeederWantedState.IDLE;
+    SystemState systemState = SystemState.IDLING;
 
-    //APPLY CONFIG TO MOTOR
-    StatusCode status = StatusCode.StatusCodeNotInitialized;
-    for (int i = 0; i < 5; ++i) {
-      status = spindexerMotor.getConfigurator().apply(spindexerMotorConfig);
-      if (status.isOK()) break;
-    }
-    if (!status.isOK()) {
-      System.out.println("Could not apply configs, error code: " + status.toString());
-    }
-  
-    for (int i = 0; i < 5; ++i) {
-      status = towerMotor.getConfigurator().apply(towerMotorConfig);
-      if (status.isOK()) break;
-    }
-    if (!status.isOK()) {
-      System.out.println("Could not apply configs, error code: " + status.toString());
-    }
-  }
+    /** Creates a new Feeder */
+    public Feeder(Turret m_turret, Shooter m_shooter, CommandSwerveDrivetrain m_Drivetrain) {
+        this.turret = m_turret;
+        this.shooter = m_shooter;
+        this.drivetrain = m_Drivetrain;
+        /* SETUP CONFIG */
 
-  public void setWantedFeederState(FeederWantedState desiredState) {
-    this.wantedState = desiredState;
-  }
+        // CURRENT LIMITS
+        spindexerMotorConfig.CurrentLimits.SupplyCurrentLimit = FeederConstants.SupplyCurrentLimit;
+        spindexerMotorConfig.CurrentLimits.StatorCurrentLimit = FeederConstants.StatorCurrentLimit;
+        towerMotorConfig.CurrentLimits.SupplyCurrentLimit = FeederConstants.SupplyCurrentLimit;
+        towerMotorConfig.CurrentLimits.StatorCurrentLimit = FeederConstants.StatorCurrentLimit;
 
-  private SystemState changeCurrentSystemState() {
-    return switch (wantedState) {
-      case IDLE: 
-        yield SystemState.IDLING;
-      case INTAKE: 
-        yield SystemState.INTAKING;
-      case SHOOT: 
-        yield SystemState.SHOOTING;
-      case PASS:
-        yield SystemState.PASSING;
-      case FEEDTEST:
-        yield SystemState.FEEDTESTING;
-    };
-  }
-
-    
-  private void applyState(){
-    switch(systemState){
-      case IDLING:
-        spindexerMotorSpeed = 0.0;
-        towerMotorSpeed = 0.0;
-        break;
-      case INTAKING:
-        spindexerMotorSpeed = FeederConstants.feederIntakeSpeed;
-        towerMotorSpeed = 0.0;
-        break;
-      case SHOOTING:
-        if(shooter.shooterIsReady() && turret.turretIsReady()) {
-          spindexerMotorSpeed = FeederConstants.feederShootSpeed;
-          towerMotorSpeed = FeederConstants.feederShootSpeed;
-        } else {
-          spindexerMotorSpeed = 0;
-          towerMotorSpeed = 0;
+        // APPLY CONFIG TO MOTOR
+        StatusCode status = StatusCode.StatusCodeNotInitialized;
+        for (int i = 0; i < 5; ++i) {
+            status = spindexerMotor.getConfigurator().apply(spindexerMotorConfig);
+            if (status.isOK())
+                break;
         }
-        break;
-      case PASSING:
-        if (drivetrain.getPose().getY() > 3.53 && drivetrain.getPose().getY() < 4.53) {
-          spindexerMotorSpeed = 0;
-          towerMotorSpeed = 0;
-        } else {
-          spindexerMotorSpeed = FeederConstants.feederShootSpeed;
-          towerMotorSpeed = FeederConstants.feederShootSpeed;
+        if (!status.isOK()) {
+            System.out.println("Could not apply configs, error code: " + status.toString());
         }
-      case FEEDTESTING:
-        spindexerMotorSpeed = 0.7;
-        towerMotorSpeed = 0.7;
-        break;
+
+        for (int i = 0; i < 5; ++i) {
+            status = towerMotor.getConfigurator().apply(towerMotorConfig);
+            if (status.isOK())
+                break;
+        }
+        if (!status.isOK()) {
+            System.out.println("Could not apply configs, error code: " + status.toString());
+        }
     }
-  }
 
+    public void setWantedFeederState(FeederWantedState desiredState) {
+        this.wantedState = desiredState;
+    }
 
-  /**
-   * Check LoggedTunableNumbers. If changed, update PID and SVA values of motor
-   */
+    private SystemState changeCurrentSystemState() {
+        return switch (wantedState) {
+            case IDLE:
+                yield SystemState.IDLING;
+            case INTAKE:
+                yield SystemState.INTAKING;
+            case SHOOT:
+                yield SystemState.SHOOTING;
+            case PASS:
+                yield SystemState.PASSING;
+            case FEEDTEST:
+                yield SystemState.FEEDTESTING;
+        };
+    }
 
+    private void applyState() {
+        switch (systemState) {
+            case IDLING:
+                spindexerMotorSpeed = 0.0;
+                towerMotorSpeed = 0.0;
+                break;
+            case INTAKING:
+                spindexerMotorSpeed = FeederConstants.feederIntakeSpeed;
+                towerMotorSpeed = 0.0;
+                break;
+            case SHOOTING:
+                if (shooter.shooterIsReady() && turret.turretIsReady()) {
+                    spindexerMotorSpeed = FeederConstants.feederShootSpeed;
+                    towerMotorSpeed = FeederConstants.feederShootSpeed;
+                } else {
+                    spindexerMotorSpeed = 0;
+                    towerMotorSpeed = 0;
+                }
+                break;
+            case PASSING:
+                if (drivetrain.getPose().getY() > 3.53 && drivetrain.getPose().getY() < 4.53) {
+                    spindexerMotorSpeed = 0;
+                    towerMotorSpeed = 0;
+                } else {
+                    spindexerMotorSpeed = FeederConstants.feederShootSpeed;
+                    towerMotorSpeed = FeederConstants.feederShootSpeed;
+                }
+            case FEEDTESTING:
+                spindexerMotorSpeed = 0.7;
+                towerMotorSpeed = 0.7;
+                break;
+        }
+    }
 
-  @Override
-  public void periodic() {
-    SmartDashboard.putString("FEEDER WANTED STATE", wantedState.toString());
-    SmartDashboard.putString("FEEDER SYSTEM STATE", systemState.toString());
-    
-    systemState = changeCurrentSystemState();
-    applyState();
+    /**
+     * Check LoggedTunableNumbers. If changed, update PID and SVA values of motor
+     */
 
-    spindexerMotor.set(spindexerMotorSpeed);
-    towerMotor.set(towerMotorSpeed);
-  }
+    @Override
+    public void periodic() {
+        SmartDashboard.putString("FEEDER WANTED STATE", wantedState.toString());
+        SmartDashboard.putString("FEEDER SYSTEM STATE", systemState.toString());
+
+        systemState = changeCurrentSystemState();
+        applyState();
+
+        spindexerMotor.set(spindexerMotorSpeed);
+        towerMotor.set(towerMotorSpeed);
+    }
 
 }

@@ -1,8 +1,5 @@
 package frc.robot.subsystems.Drive;
 
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
 import org.photonvision.EstimatedRobotPose;
@@ -16,22 +13,16 @@ import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
-import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.DriverStation.Alliance;
-import edu.wpi.first.wpilibj.smartdashboard.Field2d;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.Constants.VisionConstants;
 
 public class Vision {
-    private final PhotonCamera camera1; //camera facing x
-    private final PhotonCamera camera2; //camera facing y
-    private final PhotonCamera camera3; //camera facing -y
+    private final PhotonCamera camera1; // camera facing x
+    private final PhotonCamera camera2; // camera facing y
+    private final PhotonCamera camera3; // camera facing -y
     private final PhotonPoseEstimator poseEstimator1;
     private final PhotonPoseEstimator poseEstimator2;
     private final PhotonPoseEstimator poseEstimator3;
@@ -43,18 +34,19 @@ public class Vision {
     public Optional<EstimatedRobotPose> latestVision3 = Optional.empty();
     public AprilTagFieldLayout kTagLayout;
 
-    
-
-    public Vision(){
+    public Vision() {
         kTagLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
         camera1 = new PhotonCamera(VisionConstants.cameraName);
         camera2 = new PhotonCamera(VisionConstants.camera2Name);
         camera3 = new PhotonCamera(VisionConstants.camera3Name);
 
-        poseEstimator1 = new PhotonPoseEstimator(kTagLayout, PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR, VisionConstants.kRobotToCam);
-        poseEstimator2 = new PhotonPoseEstimator(kTagLayout, PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR, VisionConstants.kRobotToCam2);
-        poseEstimator3 = new PhotonPoseEstimator(kTagLayout, PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR, VisionConstants.kRobotToCam3);
-        poseEstimator1.setMultiTagFallbackStrategy(PoseStrategy.LOWEST_AMBIGUITY); //TODO: TRY TRIG SOLVE
+        poseEstimator1 = new PhotonPoseEstimator(kTagLayout, PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR,
+                VisionConstants.kRobotToCam);
+        poseEstimator2 = new PhotonPoseEstimator(kTagLayout, PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR,
+                VisionConstants.kRobotToCam2);
+        poseEstimator3 = new PhotonPoseEstimator(kTagLayout, PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR,
+                VisionConstants.kRobotToCam3);
+        poseEstimator1.setMultiTagFallbackStrategy(PoseStrategy.LOWEST_AMBIGUITY); // TODO: TRY TRIG SOLVE
         poseEstimator2.setMultiTagFallbackStrategy(PoseStrategy.LOWEST_AMBIGUITY);
         poseEstimator3.setMultiTagFallbackStrategy(PoseStrategy.LOWEST_AMBIGUITY);
     }
@@ -172,8 +164,8 @@ public class Vision {
             double estSINFrom1 = poseFrom1.getRotation().getSin();
             double estSINFrom2 = poseFrom2.getRotation().getSin();
 
-            double avgX = (estXFrom1 + estXFrom2 ) / 2;
-            double avgY = (estYFrom1 + estYFrom2 ) / 2;
+            double avgX = (estXFrom1 + estXFrom2) / 2;
+            double avgY = (estYFrom1 + estYFrom2) / 2;
 
             double avgCos = (estCOSFrom1 + estCOSFrom2) / 2;
             double avgSin = (estSINFrom1 + estSINFrom2) / 2;
@@ -191,7 +183,7 @@ public class Vision {
         var visionEst3 = getEstimatedGlobalPose3();
         Pose2d combinedEstimate = new Pose2d();
 
-        if ( visionEst2.isPresent() && visionEst3.isPresent()) {
+        if (visionEst2.isPresent() && visionEst3.isPresent()) {
             Pose2d poseFrom2 = visionEst2.get().estimatedPose.toPose2d();
             Pose2d poseFrom3 = visionEst3.get().estimatedPose.toPose2d();
 
@@ -207,11 +199,11 @@ public class Vision {
             double estSINFrom2 = poseFrom2.getRotation().getSin();
             double estSINFrom3 = poseFrom3.getRotation().getSin();
 
-            double avgX = ( estXFrom2 + estXFrom3) / 2;
-            double avgY = ( estYFrom2 + estYFrom3) / 2;
+            double avgX = (estXFrom2 + estXFrom3) / 2;
+            double avgY = (estYFrom2 + estYFrom3) / 2;
 
-            double avgCos = ( estCOSFrom2 + estCOSFrom3) / 2;
-            double avgSin = ( estSINFrom2 + estSINFrom3) / 2;
+            double avgCos = (estCOSFrom2 + estCOSFrom3) / 2;
+            double avgSin = (estSINFrom2 + estSINFrom3) / 2;
 
             combinedEstimate = new Pose2d(avgX, avgY, new Rotation2d(avgCos, avgSin));
         } else {
@@ -241,8 +233,8 @@ public class Vision {
             double estSINFrom1 = poseFrom1.getRotation().getSin();
             double estSINFrom3 = poseFrom3.getRotation().getSin();
 
-            double avgX = (estXFrom1  + estXFrom3) / 2;
-            double avgY = (estYFrom1  + estYFrom3) / 2;
+            double avgX = (estXFrom1 + estXFrom3) / 2;
+            double avgY = (estYFrom1 + estYFrom3) / 2;
 
             double avgCos = (estCOSFrom1 + estCOSFrom3) / 2;
             double avgSin = (estSINFrom1 + estSINFrom3) / 2;
@@ -268,7 +260,7 @@ public class Vision {
 
         for (var tgt1 : targets1) {
             var tagPose = poseEstimator1.getFieldTags().getTagPose(tgt1.getFiducialId());
-            if (tagPose.isEmpty()){
+            if (tagPose.isEmpty()) {
                 continue;
             }
             numTags1++;
@@ -276,22 +268,22 @@ public class Vision {
         }
         for (var tgt2 : targets2) {
             var tagPose = poseEstimator2.getFieldTags().getTagPose(tgt2.getFiducialId());
-            if (tagPose.isEmpty()){
+            if (tagPose.isEmpty()) {
                 continue;
             }
             numTags2++;
             avgDist2 += tagPose.get().toPose2d().getTranslation().getDistance(estimatedPose.getTranslation());
         }
-        for (var tgt3 : targets3){
+        for (var tgt3 : targets3) {
             var tagPose = poseEstimator3.getFieldTags().getTagPose(tgt3.getFiducialId());
-            if (tagPose.isEmpty()){
+            if (tagPose.isEmpty()) {
                 continue;
             }
             numTags3++;
             avgDist3 += tagPose.get().toPose2d().getTranslation().getDistance(estimatedPose.getTranslation());
         }
 
-        if (numTags1 == 0){ //josh check (should check if 0 for other cams too?)
+        if (numTags1 == 0) { // josh check (should check if 0 for other cams too?)
             return estStdDevs;
         }
 
@@ -300,7 +292,7 @@ public class Vision {
         avgDist3 /= numTags3;
 
         // Decrease std devs if multiple targets are visible
-        if (numTags1 > 1 || numTags2 > 1 || numTags3 > 1){ //josh check (check if other cams are greater than 1 too?)
+        if (numTags1 > 1 || numTags2 > 1 || numTags3 > 1) { // josh check (check if other cams are greater than 1 too?)
             estStdDevs = Constants.VisionConstants.kMultiTagStdDevs;
         }
         // Increase std devs based on (average) distance
