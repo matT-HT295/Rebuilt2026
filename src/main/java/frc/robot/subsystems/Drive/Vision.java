@@ -1,5 +1,6 @@
 package frc.robot.subsystems.Drive;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.photonvision.EstimatedRobotPose;
@@ -7,6 +8,7 @@ import org.photonvision.PhotonCamera;
 import org.photonvision.PhotonPoseEstimator;
 import org.photonvision.PhotonPoseEstimator.PoseStrategy;
 import org.photonvision.targeting.PhotonPipelineResult;
+import org.photonvision.targeting.PhotonTrackedTarget;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
@@ -52,6 +54,13 @@ public class Vision {
     }
 
     public PhotonPipelineResult getLatestResult1() {
+        var targets1 = camera1.getLatestResult().getTargets();
+        for (var tgt1 : targets1) {
+            var tagID = tgt1.getFiducialId();
+            if (tagID == 13 || tagID == 14 || tagID == 29 || tagID == 30) {
+                return new PhotonPipelineResult();
+            }
+        }
         return camera1.getLatestResult();
     }
 
