@@ -139,6 +139,8 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         return futurePose;
     }
 
+    private ChassisSpeeds filteredFieldSpeeds = new ChassisSpeeds(0, 0, 0);
+
     public Translation2d getSOTFTurretAngle(String whereToAim) {
 
         // Current turret pose
@@ -185,11 +187,33 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         // getState().Speeds,
         // getPose().getRotation()
         // );
-        ChassisSpeeds fieldSpeeds = getState().Speeds;
+        // Convert robot speeds to field relative
+ChassisSpeeds rawFieldSpeeds =
+    ChassisSpeeds.fromRobotRelativeSpeeds(
+        getState().Speeds,
+        getPose().getRotation()
+    );
+
+// Low-pass filter (smooth velocity)
+double alpha = 0.15; // smaller = smoother (0.1–0.2 usually good)
+
+filteredFieldSpeeds.vxMetersPerSecond =
+    alpha * rawFieldSpeeds.vxMetersPerSecond +
+    (1 - alpha) * filteredFieldSpeeds.vxMetersPerSecond;
+
+filteredFieldSpeeds.vyMetersPerSecond =
+    alpha * rawFieldSpeeds.vyMetersPerSecond +
+    (1 - alpha) * filteredFieldSpeeds.vyMetersPerSecond;
+
+filteredFieldSpeeds.omegaRadiansPerSecond =
+    rawFieldSpeeds.omegaRadiansPerSecond;
         // Robot translational velocity
-        Translation2d robotVelocity = new Translation2d(
-                fieldSpeeds.vxMetersPerSecond,
-                fieldSpeeds.vyMetersPerSecond);
+        Translation2d robotVelocity =
+            new Translation2d(
+                filteredFieldSpeeds.vxMetersPerSecond,
+                filteredFieldSpeeds.vyMetersPerSecond
+            );
+
 
         // --- TRANSLATIONAL SOTF CORRECTION ---
 
@@ -197,7 +221,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
         // --- ROTATIONAL SOTF CORRECTION ---
 
-        double omega = fieldSpeeds.omegaRadiansPerSecond;
+        double omega = filteredFieldSpeeds.omegaRadiansPerSecond;
 
         Translation2d turretOffset = turretPose.getTranslation().minus(getPose().getTranslation());
 
