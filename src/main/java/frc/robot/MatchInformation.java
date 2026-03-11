@@ -1,15 +1,17 @@
 package frc.robot;
+
 import java.util.Optional;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.LEDPattern;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.LightsConstants;
 import frc.robot.commands.Lights.WPIlib.SetBlinkingPattern;
 import frc.robot.commands.Lights.WPIlib.ResetLED;
 import frc.robot.subsystems.Lights.LEDSubsystem_WPIlib;
 
-public class MatchInformation extends SubsystemBase{
+public class MatchInformation extends SubsystemBase {
     private final LEDSubsystem_WPIlib normalLights;
 
     // Match Phases
@@ -44,6 +46,17 @@ public class MatchInformation extends SubsystemBase{
     public boolean redInactiveFirst;
     public boolean shiftWarning_advised;
     public boolean shiftWarning_active;
+    // private boolean transitionSignalActive;
+
+    private enum WarningStage {
+        NONE,
+        SLOW,
+        FAST,
+        SHIFT,
+        ENDGAME
+    }
+
+    private WarningStage currentWarningStage;
 
     // Flags
     public boolean endgame;
@@ -86,6 +99,8 @@ public class MatchInformation extends SubsystemBase{
         endgame = false;
         climbAdvised = false;
         scoringSafeWindow = false;
+        currentWarningStage = WarningStage.NONE;
+        // transitionSignalActive = false;
 
         fpgaTimestamp = 0;
         teleopStartTimestamp = -1;
@@ -93,7 +108,8 @@ public class MatchInformation extends SubsystemBase{
     }
 
     /**
-     * Update [Driver Station] information. ! Run first - other data is based on this. !
+     * Update [Driver Station] information. ! Run first - other data is based on
+     * this. !
      */
     public void updateDriverStation() {
         enabled = DriverStation.isEnabled();
@@ -108,7 +124,9 @@ public class MatchInformation extends SubsystemBase{
         gameData = DriverStation.getGameSpecificMessage();
     }
 
-    /** Update timestamps and calculate elapsed time for phases. ! Run after updating Driver Station info. !
+    /**
+     * Update timestamps and calculate elapsed time for phases. ! Run after updating
+     * Driver Station info. !
      */
     public void updateTimestamps() {
         fpgaTimestamp = Timer.getFPGATimestamp();
@@ -125,7 +143,9 @@ public class MatchInformation extends SubsystemBase{
         }
     }
 
-    /** Update the current match phase based on Driver Station info and timestamps. ! Run after updating Driver Station info and timestamps. !
+    /**
+     * Update the current match phase based on Driver Station info and timestamps. !
+     * Run after updating Driver Station info and timestamps. !
      */
     public void updatePhase() {
 
@@ -168,7 +188,9 @@ public class MatchInformation extends SubsystemBase{
         phase = MatchPhase.UNKNOWN;
     }
 
-    /** Update hub and shift logic based on match time and game data. ! Run after updating Driver Station info and timestamps. !
+    /**
+     * Update hub and shift logic based on match time and game data. ! Run after
+     * updating Driver Station info and timestamps. !
      */
     public void updateHubLogic() {
 
@@ -217,24 +239,19 @@ public class MatchInformation extends SubsystemBase{
         if (matchTime > 130) {
             hubActive = true;
             return;
-        }
-        else if (matchTime > 105) {
+        } else if (matchTime > 105) {
             teleopShift = 1;
             hubActive = shift1Active;
-        }
-        else if (matchTime > 80) {
+        } else if (matchTime > 80) {
             teleopShift = 2;
             hubActive = !shift1Active;
-        }
-        else if (matchTime > 55) {
+        } else if (matchTime > 55) {
             teleopShift = 3;
             hubActive = shift1Active;
-        }
-        else if (matchTime > 30) {
+        } else if (matchTime > 30) {
             teleopShift = 4;
             hubActive = !shift1Active;
-        }
-        else {
+        } else {
             hubActive = true;
             return;
         }
@@ -246,19 +263,14 @@ public class MatchInformation extends SubsystemBase{
 
         if (shiftTimeRemaining >= 25.0)
             shiftTimeRemaining = 0;
-
-        // Determine if warning should activate
-        shiftWarning_advised =
-                teleop &&
-                teleopShift > 0 &&
-                !endgame &&
-                shiftTimeRemaining > 0 &&
-                shiftTimeRemaining <= SHIFT_WARNING_THRESHOLD;
     }
 
-    /** Update convenience flags based on current match state. ! Run after updating Driver Station info, timestamps, and hub logic. !
+    /**
+     * Update convenience flags based on current match state. ! Run after updating
+     * Driver Station info, timestamps, and hub logic. !
      * - climbAllowed: true during endgame, false otherwise
-     * - scoringSafeWindow: true when hub is active and it's not endgame, false otherwise
+     * - scoringSafeWindow: true when hub is active and it's not endgame, false
+     * otherwise
      */
     public void updateFlags() {
         climbAdvised = endgame;
@@ -273,31 +285,98 @@ public class MatchInformation extends SubsystemBase{
      * Update shift warning lights based on remaining shift time.
      */
     public void updateShiftWarning() {
-        if (shiftWarning_advised && !shiftWarning_active) {
 
-            shiftWarning_active = true;
-
-            if (hubActive) {
+        // ================================
+        // ENDGAME
+        // ================================
+        if (endgame) {
+            if (currentWarningStage != WarningStage.ENDGAME) {
+                currentWarningStage = WarningStage.ENDGAME;
                 new SetBlinkingPattern(
-                    normalLights,
-                    LEDSubsystem_WPIlib.LEDTarget.SIDES,
-                    LEDPattern.solid(LightsConstants.RBGColors.get("green")),
-                    0.5,
-                    0.5
-                ).schedule();
-            } else {
-                new SetBlinkingPattern(
-                    normalLights,
-                    LEDSubsystem_WPIlib.LEDTarget.SIDES,
-                    LEDPattern.solid(LightsConstants.RBGColors.get("red")),
-                    0.5,
-                    0.5
-                ).schedule();
+                        normalLights,
+                        LEDSubsystem_WPIlib.LEDTarget.SIDES,
+                        LEDPattern.solid(LightsConstants.RBGColors.get("yellow")),
+                        0.25,
+                        0.25).schedule();
             }
-        } 
-        else if (!shiftWarning_advised && shiftWarning_active) {
-            shiftWarning_active = false;
-                new ResetLED(normalLights, LEDSubsystem_WPIlib.LEDTarget.SIDES).schedule();
+            return;
+        }
+
+        // ================================
+        // INVALID CONDITIONS
+        // ================================
+        if (!teleop || teleopShift <= 0) {
+            if (currentWarningStage != WarningStage.NONE) {
+                currentWarningStage = WarningStage.NONE;
+
+                new ResetLED(
+                        normalLights,
+                        LEDSubsystem_WPIlib.LEDTarget.SIDES).schedule();
+            }
+            return;
+        }
+
+        double t = shiftTimeRemaining;
+        Color nextColor = hubActive
+                ? LightsConstants.RBGColors.get("red")
+                : LightsConstants.RBGColors.get("green");
+
+        // ================================
+        // MAGENTA SHIFT SIGNAL (25–23s)
+        // ================================
+        if (t >= 23 && t <= 25) {
+            if (currentWarningStage != WarningStage.SHIFT) {
+                currentWarningStage = WarningStage.SHIFT;
+                new SetBlinkingPattern(
+                        normalLights,
+                        LEDSubsystem_WPIlib.LEDTarget.SIDES,
+                        LEDPattern.solid(LightsConstants.RBGColors.get("magenta")),
+                        0.25,
+                        0.25).schedule();
+            }
+            return;
+        }
+
+        // ================================
+        // SLOW WARNING (10–5s)
+        // ================================
+        if (t <= 10 && t > 5) {
+            if (currentWarningStage != WarningStage.SLOW) {
+                currentWarningStage = WarningStage.SLOW;
+                new SetBlinkingPattern(
+                        normalLights,
+                        LEDSubsystem_WPIlib.LEDTarget.SIDES,
+                        LEDPattern.solid(nextColor),
+                        0.5,
+                        0.5).schedule();
+            }
+            return;
+        }
+
+        // ================================
+        // FAST WARNING (5–0s)
+        // ================================
+        if (t <= 5 && t > 0) {
+            if (currentWarningStage != WarningStage.FAST) {
+                currentWarningStage = WarningStage.FAST;
+                new SetBlinkingPattern(
+                        normalLights,
+                        LEDSubsystem_WPIlib.LEDTarget.SIDES,
+                        LEDPattern.solid(nextColor),
+                        0.25,
+                        0.25).schedule();
+            }
+            return;
+        }
+
+        // ================================
+        // OUTSIDE WARNING WINDOW (23-10s)
+        // ================================
+        if (currentWarningStage != WarningStage.NONE) {
+            currentWarningStage = WarningStage.NONE;
+            new ResetLED(
+                    normalLights,
+                    LEDSubsystem_WPIlib.LEDTarget.SIDES).schedule();
         }
     }
 
