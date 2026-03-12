@@ -130,8 +130,8 @@ public final class Constants {
     public static double intakeMotionMagicAccel;
     public static double intakeMotionMagicCruiseVel;
 
-    public static int SupplyCurrentLimit = 80;
-    public static int StatorCurrentLimit = 80;
+    public static int SupplyCurrentLimit = 60;
+    public static int StatorCurrentLimit = 60;
 
     public static int intakeMotorID = 32;
     public static int intakeExtensionMotorID = 31;
@@ -168,8 +168,8 @@ public final class Constants {
     public static int turretMotionMagicAccel;
     public static int turretMotionMagicJerk;
 
-    public static int SupplyCurrentLimit = 80;
-    public static int StatorCurrentLimit = 80;
+    public static int SupplyCurrentLimit = 60;
+    public static int StatorCurrentLimit = 60;
 
     public static int turretMotorID = 50;
     public static int encoderID = 54;
@@ -212,8 +212,8 @@ public final class Constants {
     public static int feederMotionMagicAccel;
     public static int feederMotionMagicJerk;
     
-    public static int SupplyCurrentLimit = 80;
-    public static int StatorCurrentLimit = 80;
+    public static int SupplyCurrentLimit = 60;
+    public static int StatorCurrentLimit = 60;
     
     public static int towerMotorID = 41;
     public static int spindexerMotorID = 40;
@@ -245,7 +245,7 @@ public final class Constants {
     // LED Strip
     public static int led_port = 0;
     public static int led_length = 20;   // 48 LEDs, 24 a side
-    public static int led_brightness = 50;
+    public static int led_brightness = 10;
     // Signal LED Sector (on shooter)
     public static int signal_length = 10;   // 10, 5 a side
 
@@ -406,7 +406,7 @@ public final class Constants {
 
     /* standard deviations for vision calculations */
     public static edu.wpi.first.math.Vector<N3> kSingleTagStdDevs = VecBuilder.fill(4, 4, 4);
-    public static edu.wpi.first.math.Vector<N3> kMultiTagStdDevs = VecBuilder.fill(1, 1, 1);
+    public static edu.wpi.first.math.Vector<N3> kMultiTagStdDevs = VecBuilder.fill(2.5 , 2.5, 2.5);
     public static edu.wpi.first.math.Vector<N3> odoStdDEvs = VecBuilder.fill(.2, .2, .05);
     public static double odometryUpdateFrequency = 250;
   }

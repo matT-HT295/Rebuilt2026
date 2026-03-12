@@ -163,9 +163,9 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
                 }
             } else {
                 if (getPose().getY() > 4.03) {
-                    aimingTarget = VisionConstants.BLUE_PASS_SPOT_1;
-                } else {
                     aimingTarget = VisionConstants.BLUE_PASS_SPOT_2;
+                } else {
+                    aimingTarget = VisionConstants.BLUE_PASS_SPOT_1;
                 }
             }
         } else {

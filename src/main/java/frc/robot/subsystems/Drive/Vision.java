@@ -92,8 +92,8 @@ public class Vision {
         if (newResult) {
             lastEstTimestamp2 = latestTimestamp;
         }
-        latestVision = latestPoseEstimate2;
-        return latestVision;
+        latestVision2 = latestPoseEstimate2;
+        return latestVision2;
     }
 
     public Optional<EstimatedRobotPose> getEstimatedGlobalPose3() {
@@ -104,8 +104,8 @@ public class Vision {
         if (newResult) {
             lastEstTimestamp3 = latestTimestamp;
         }
-        latestVision = latestPoseEstimate3;
-        return latestVision;
+        latestVision3 = latestPoseEstimate3;
+        return latestVision3;
     }
 
     public Pose2d getPoseFromCams() {
