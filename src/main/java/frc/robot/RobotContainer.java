@@ -326,7 +326,7 @@ public class RobotContainer {
                         new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.RETRACT)))
                         .alongWith(wait(4.5)));
 
-        NamedCommands.registerCommand("Aim Shoot",
+        NamedCommands.registerCommand("SOTF",
                 new SequentialCommandGroup(
                         new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.HUB_SHOOT)),
                         new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.AIM_HUB)),
@@ -335,7 +335,7 @@ public class RobotContainer {
                         wait(1.5),
                         new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.RETRACT))));
 
-        NamedCommands.registerCommand("SOTF",
+        NamedCommands.registerCommand("Aim Shoot",
                 new SequentialCommandGroup(
                         new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.HUB_SHOOT)),
                         new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.AIM_HUB)),
@@ -344,7 +344,7 @@ public class RobotContainer {
                         wait(1.5),
                         new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.RETRACT)))
                         .alongWith(wait(4.5)));
-                        
+
         NamedCommands.registerCommand("Intake",
                 new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.INTAKE)));
     }

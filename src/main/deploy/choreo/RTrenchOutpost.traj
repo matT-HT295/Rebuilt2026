@@ -111,5 +111,5 @@
   "splits":[0]
  },
  "events":[
-   {"name":"Marker", "from":{"target":1, "targetTimestamp":0.44801, "offset":{"exp":"0 s", "val":0.0}}, "event":{"type":"named", "data":{"name":"Aim Shoot"}}}]
+   {"name":"Marker", "from":{"target":1, "targetTimestamp":0.44801, "offset":{"exp":"0 s", "val":0.0}}, "event":{"type":"named", "data":{"name":"SOTF"}}}]
 }
