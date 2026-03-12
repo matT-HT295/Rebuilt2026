@@ -71,7 +71,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     public ScoringZone getZone() {
         Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
         if (alliance.equals(Alliance.Blue)) {
-            if (0 < getPose().getX() && getPose().getX() < 3.6) {
+            if (0 < getPose().getX() && getPose().getX() < 4.6) {
                 return ScoringZone.BLUE_HUB;
             } else {
                 if (4.03 < getPose().getY()) {
@@ -81,7 +81,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
                 }
             }
         } else {
-            if (13 < getPose().getX() && getPose().getX() < 16.6) {
+            if (11.9 < getPose().getX() && getPose().getX() < 16.6) {
                 return ScoringZone.RED_HUB;
             } else {
                 if (4.03 < getPose().getY()) {
@@ -188,32 +188,24 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         // getPose().getRotation()
         // );
         // Convert robot speeds to field relative
-ChassisSpeeds rawFieldSpeeds =
-    ChassisSpeeds.fromRobotRelativeSpeeds(
-        getState().Speeds,
-        getPose().getRotation()
-    );
+        ChassisSpeeds rawFieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
+                getState().Speeds,
+                getPose().getRotation());
 
-// Low-pass filter (smooth velocity)
-double alpha = 0.15; // smaller = smoother (0.1–0.2 usually good)
+        // Low-pass filter (smooth velocity)
+        double alpha = 0.15; // smaller = smoother (0.1–0.2 usually good)
 
-filteredFieldSpeeds.vxMetersPerSecond =
-    alpha * rawFieldSpeeds.vxMetersPerSecond +
-    (1 - alpha) * filteredFieldSpeeds.vxMetersPerSecond;
+        filteredFieldSpeeds.vxMetersPerSecond = alpha * rawFieldSpeeds.vxMetersPerSecond +
+                (1 - alpha) * filteredFieldSpeeds.vxMetersPerSecond;
 
-filteredFieldSpeeds.vyMetersPerSecond =
-    alpha * rawFieldSpeeds.vyMetersPerSecond +
-    (1 - alpha) * filteredFieldSpeeds.vyMetersPerSecond;
+        filteredFieldSpeeds.vyMetersPerSecond = alpha * rawFieldSpeeds.vyMetersPerSecond +
+                (1 - alpha) * filteredFieldSpeeds.vyMetersPerSecond;
 
-filteredFieldSpeeds.omegaRadiansPerSecond =
-    rawFieldSpeeds.omegaRadiansPerSecond;
+        filteredFieldSpeeds.omegaRadiansPerSecond = rawFieldSpeeds.omegaRadiansPerSecond;
         // Robot translational velocity
-        Translation2d robotVelocity =
-            new Translation2d(
+        Translation2d robotVelocity = new Translation2d(
                 filteredFieldSpeeds.vxMetersPerSecond,
-                filteredFieldSpeeds.vyMetersPerSecond
-            );
-
+                filteredFieldSpeeds.vyMetersPerSecond);
 
         // --- TRANSLATIONAL SOTF CORRECTION ---
 
@@ -721,6 +713,16 @@ filteredFieldSpeeds.omegaRadiansPerSecond =
     @Override
     public void periodic() {
         TheField.getObject("robot").setPose(getPose());
+        if (vision.getEstimatedGlobalPose1().isPresent()) {
+            TheField.getObject("cam1").setPose(vision.getEstimatedGlobalPose1().get().estimatedPose.toPose2d());
+        }
+        if (vision.getEstimatedGlobalPose2().isPresent()) {
+            TheField.getObject("cam2").setPose(vision.getEstimatedGlobalPose2().get().estimatedPose.toPose2d());
+        }
+        if (vision.getEstimatedGlobalPose3().isPresent()) {
+            TheField.getObject("cam3").setPose(vision.getEstimatedGlobalPose3().get().estimatedPose.toPose2d());
+        }
+
         /*
          * Periodically try to apply the operator perspective.
          * If we haven't applied the operator perspective before, then we should apply
