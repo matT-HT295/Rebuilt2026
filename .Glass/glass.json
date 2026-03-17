@@ -19,9 +19,6 @@
         "Module 3": {
           "open": true
         },
-        "The field": {
-          "open": true
-        },
         "open": true
       },
       "photonvision": {
@@ -60,8 +57,8 @@
         "left": 245,
         "right": 3942,
         "robot": {
-          "length": 0.8636000156402588,
-          "width": 0.8636000156402588
+          "length": 0.8730000257492065,
+          "width": 0.8730000257492065
         },
         "top": 118,
         "width": 16.54119300842285,
@@ -86,7 +83,8 @@
   },
   "NetworkTables Settings": {
     "mode": "Client (NT4)",
-    "serverTeam": "3161"
+    "serverTeam": "3161",
+    "visible": false
   },
   "Plots": {
     "Plot <0>": {

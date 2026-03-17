@@ -19,6 +19,8 @@ import frc.robot.subsystems.Intake.Intake;
 
 import frc.robot.subsystems.Lights.LEDSubsystem_WPIlib;
 import frc.robot.subsystems.Lights.LEDSubsystem_WPIlib.LEDTarget;
+import frc.robot.commands.HomeIntake;
+import frc.robot.commands.Lights.WPIlib.DisableLED;
 import frc.robot.commands.Lights.WPIlib.SetTwinklePattern;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
@@ -30,6 +32,7 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -50,15 +53,17 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
  * subsystems, commands, and trigger mappings) should be declared here.
  */
 public class RobotContainer {
+        public final Timer matchTimer = new Timer();
+
     // The robot's subsystems and commands are defined here...
     public final LEDSubsystem_WPIlib normalLights = new LEDSubsystem_WPIlib();
     public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
     public final Intake intake = new Intake();
-    public final Turret turret = new Turret(drivetrain, normalLights);
+    public final Turret turret = new Turret(drivetrain);
     public final Shooter shooter = new Shooter(drivetrain);
     public final Feeder feeder = new Feeder(turret, shooter, drivetrain);
-    // private final Vision vision = new Vision();
-    public final MatchInformation matchInformation = new MatchInformation(normalLights);
+//     private final Vision vision = new Vision();
+    public final MatchInformation matchInformation = new MatchInformation(matchTimer);
     public SendableChooser<Command> sendableChooser = new SendableChooser<>();
 
     // private double MaxSpeed = 1.0 *
@@ -185,8 +190,37 @@ public class RobotContainer {
         // ));
 
         /********* OPERATOR *********/
-        // trench shot
+
+        // operator.start().whileTrue(new HomeIntake(intake));
+        // spindexer reverse
+        operator.a()
+                .onTrue(new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.FEEDTEST)))
+                .onFalse(new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.IDLE)));
+
+        // high pass
+        operator.y()
+                .onTrue(new SequentialCommandGroup(
+                        new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.TEST)),
+                        new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.AIM_PASS)),
+                        new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.SHOOT))))
+                .onFalse(new ParallelCommandGroup(
+                        new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.WAIT)),
+                        new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.IDLE)),
+                        new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.IDLE))));
+
+
+        // right trench shot
         operator.b()
+                .onTrue(new SequentialCommandGroup(
+                        new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.TRENCH_SHOOT)),
+                        new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.TRENCH_PRESETR)),
+                        new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.SHOOT))))
+                .onFalse(new ParallelCommandGroup(
+                        new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.WAIT)),
+                        new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.IDLE)),
+                        new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.IDLE))));
+        // left trench shot
+        operator.x()
                 .onTrue(new SequentialCommandGroup(
                         new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.TRENCH_SHOOT)),
                         new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.TRENCH_PRESETL)),
@@ -213,6 +247,15 @@ public class RobotContainer {
                         new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.WAIT)),
                         new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.IDLE)),
                         new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.IDLE))));
+        // aiming offset
+        operator.povRight()
+                .onTrue(
+                        new InstantCommand(() -> turret.applyLeftOffset())
+                );
+        operator.povLeft()
+                .onTrue(
+                        new InstantCommand(() -> turret.applyRightOffset())
+                );
 
         // passing
         operator.rightBumper()
@@ -268,6 +311,10 @@ public class RobotContainer {
                 LightsConstants.RBGColors.get("black"),
                 LightsConstants.RBGColors.get("gold"),
                 2.5).schedule();
+    }
+    public void LEDSHUTOFF() {
+
+        // new DisableLED(normalLights).schedule();
     }
 
     /**
@@ -342,8 +389,7 @@ public class RobotContainer {
                         waitToShoot(),
                         new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.SHOOT)),
                         wait(1.5),
-                        new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.RETRACT)))
-                        .alongWith(wait(4.5)));
+                        new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.RETRACT))));
 
         NamedCommands.registerCommand("Intake",
                 new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.INTAKE)));

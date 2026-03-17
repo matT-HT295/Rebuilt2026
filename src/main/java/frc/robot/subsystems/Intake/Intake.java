@@ -21,7 +21,7 @@ import frc.util.LoggedTunableNumber;
 public class Intake extends SubsystemBase {
     /* MOTORS */
     private TalonFX intakeMotor = new TalonFX(IntakeConstants.intakeMotorID, "rio");
-    private TalonFX intakeExtensionMotor = new TalonFX(IntakeConstants.intakeExtensionMotorID, "rio");
+    public TalonFX intakeExtensionMotor = new TalonFX(IntakeConstants.intakeExtensionMotorID, "rio");
     private TalonFXConfiguration intakeMotorConfig = new TalonFXConfiguration();
     // for velocity control
     private double motorspeed = 0.0;

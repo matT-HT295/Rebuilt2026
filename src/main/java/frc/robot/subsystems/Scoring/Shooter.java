@@ -247,8 +247,8 @@ public class Shooter extends SubsystemBase {
                 break;
             case TESTING:
                 // change these to find interpolation values
-                motorspeed = 45;
-                position = 3;
+                motorspeed = 95;
+                position = 7.5;
                 break;
             case RETRACTING_AUTO:
                 position = 0;
@@ -282,7 +282,7 @@ public class Shooter extends SubsystemBase {
     }
 
     public boolean shooterIsReady() {
-        if (Math.abs(shooterMotor1.getVelocity().getValueAsDouble() - motorspeed) < 1) {
+        if (Math.abs(shooterMotor1.getVelocity().getValueAsDouble() - motorspeed) < 1.5) {
             return true;
         } else {
             return false;

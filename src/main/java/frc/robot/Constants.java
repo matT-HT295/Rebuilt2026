@@ -50,10 +50,11 @@ public final class Constants {
     new PolynomialRegression(
       Arrays.asList(
         new Point(2, 0),
-        new Point(3, 3),
-        new Point(4, 5.5),
-        new Point(5, 6), // 6.3
-        new Point(6, 7) //7.5
+        new Point(3, 2.5),
+        new Point(4, 5),
+        new Point(5, 5.5), // 6.3
+        new Point(6, 6.5), //7.5
+        new Point(10, 8)
       ),
        2);
     
@@ -64,7 +65,8 @@ public final class Constants {
         new Point(3, 50),
         new Point(4, 50),
         new Point(5, 55),
-        new Point(6, 62)
+        new Point(6, 62),
+        new Point(10, 85)
       ),
        2);
     public static PolynomialRegression timeOfFlightInterpolation = 
@@ -130,15 +132,15 @@ public final class Constants {
     public static double intakeMotionMagicAccel;
     public static double intakeMotionMagicCruiseVel;
 
-    public static int SupplyCurrentLimit = 60;
-    public static int StatorCurrentLimit = 60;
+    public static int SupplyCurrentLimit = 80;
+    public static int StatorCurrentLimit = 80;
 
     public static int intakeMotorID = 32;
     public static int intakeExtensionMotorID = 31;
 
     public static double intakingMAXPosition = 10.022461;
     public static double intakingPosition = 10;
-    public static double intakingSpeed = -0.8;
+    public static double intakingSpeed = -0.9;
     public static double shootingPosition;
     public static double retractingPos = 0;
     public static double[] intakePID = {0.3, 0, 0};
@@ -176,7 +178,7 @@ public final class Constants {
 
     public static double passAimPosition = 0;
     public static double hubPresetPosition;
-    public static double trenchPresetPositionL = .52;
+    public static double trenchPresetPositionL = .53;
     public static double trenchPresetPositionR = .50;
     public static double tolerance = 0.01;  //0.007
 
@@ -244,8 +246,8 @@ public final class Constants {
     public static Distance spacing = Meters.of(1 / 60);   // (1 / 60) - 60 leds per 1m strip [Spacing: 1m/#ofLEDs]
     // LED Strip
     public static int led_port = 0;
-    public static int led_length = 20;   // 48 LEDs, 24 a side
-    public static int led_brightness = 10;
+    public static int led_length = 40;   // 48 LEDs, 24 a side
+    public static int led_brightness = 30;
     // Signal LED Sector (on shooter)
     public static int signal_length = 10;   // 10, 5 a side
 
@@ -350,20 +352,23 @@ public final class Constants {
         Units.inchesToMeters(-6.5), 
         Units.inchesToMeters(-6), 
         new Rotation2d());
+      // public static double leftOffset = 0.01;
+      // public static double rightOffset = -0.01;
+
 
     public static Translation2d BLUE_HUB_POSE =
       new Translation2d(4.62, 4.03); //was 4.03
     public static Translation2d RED_HUB_POSE =
-      new Translation2d(12, 3.85); //was 11.92, 4.03
+      new Translation2d(12, 4.03); //was 11.92, 4.03
 
     public static Translation2d BLUE_PASS_SPOT_1 = 
-      new Translation2d(1, 1);
+      new Translation2d(1, 3); //1
     public static Translation2d BLUE_PASS_SPOT_2 = 
-      new Translation2d(1, 7);
+      new Translation2d(1, 5); //7
     public static Translation2d RED_PASS_SPOT_1 = 
-      new Translation2d(14.5, 7); //15.5
+      new Translation2d(14.5, 5); //15.5, 7
     public static Translation2d RED_PASS_SPOT_2 = 
-      new Translation2d(14.5, 1); //15.5
+      new Translation2d(14.5, 3); //15.5, 1
 
     public static double bumperToBumper; // inches
 
@@ -406,7 +411,7 @@ public final class Constants {
 
     /* standard deviations for vision calculations */
     public static edu.wpi.first.math.Vector<N3> kSingleTagStdDevs = VecBuilder.fill(4, 4, 4);
-    public static edu.wpi.first.math.Vector<N3> kMultiTagStdDevs = VecBuilder.fill(2.5 , 2.5, 2.5);
+    public static edu.wpi.first.math.Vector<N3> kMultiTagStdDevs = VecBuilder.fill(4, 4, 4);
     public static edu.wpi.first.math.Vector<N3> odoStdDEvs = VecBuilder.fill(.2, .2, .05);
     public static double odometryUpdateFrequency = 250;
   }

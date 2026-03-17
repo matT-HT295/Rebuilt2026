@@ -29,7 +29,7 @@ import frc.util.LoggedTunableNumber;
 
 public class Turret extends SubsystemBase {
     private final CommandSwerveDrivetrain drivetrain;
-    private final LEDSubsystem_WPIlib leds;
+    // private final LEDSubsystem_WPIlib leds;
     /* MOTORS */
     private TalonFX turretMotor = new TalonFX(TurretConstants.turretMotorID, "rio");
     private TalonFXConfiguration turretMotorConfig = new TalonFXConfiguration();
@@ -42,6 +42,7 @@ public class Turret extends SubsystemBase {
     private double CCWlimit = 0.85;
     private double CWLimit = -0.85;
     private double gearRatio = 38.8888888889;
+    private double offset = 0.00;
 
     final PositionVoltage mmE_request = new PositionVoltage(0);
 
@@ -59,9 +60,9 @@ public class Turret extends SubsystemBase {
     SystemState systemState = SystemState.IDLING;
 
     /** Creates a new Turret */
-    public Turret(CommandSwerveDrivetrain drivetrain, LEDSubsystem_WPIlib leds) {
+    public Turret(CommandSwerveDrivetrain drivetrain/* ,*/ /*LEDSubsystem_WPIlib leds*/) {
         this.drivetrain = drivetrain;
-        this.leds = leds;
+        // this.leds = leds;
 
         /* SETUP CONFIG */
 
@@ -114,6 +115,14 @@ public class Turret extends SubsystemBase {
 
     public void setWantedTurretState(TurretWantedState desiredState) {
         this.wantedState = desiredState;
+    }
+
+    public void applyRightOffset() {
+        offset += 0.01;
+    }
+
+    public void applyLeftOffset() {
+        offset -= 0.01;
     }
 
     private SystemState changeCurrentSystemState() {
@@ -324,7 +333,8 @@ public class Turret extends SubsystemBase {
                     target2 += 1.0;
 
                 // probe
-                SmartDashboard.putNumber("Turret Setpoint with adjustment", target2);
+                target2 += offset;
+                // SmartDashboard.putNumber("Turret Setpoint with adjustment", target2);
 
                 position = target2;
                 break;
@@ -378,6 +388,7 @@ public class Turret extends SubsystemBase {
         SmartDashboard.putNumber("Turret Motor Position", turretMotor.getPosition().getValueAsDouble());
         SmartDashboard.putNumber("Turret Wanted Position", position);
         SmartDashboard.putNumber("Turret Encoder Position", encoder.getPosition().getValueAsDouble());
+        SmartDashboard.putNumber("Turret Offset", offset);
         SmartDashboard.putString("TURRET WANTED STATE", wantedState.toString());
         SmartDashboard.putString("TURRET SYSTEM STATE", systemState.toString());
     }

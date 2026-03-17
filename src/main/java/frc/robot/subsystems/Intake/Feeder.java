@@ -117,8 +117,8 @@ public class Feeder extends SubsystemBase {
                     towerMotorSpeed = FeederConstants.feederShootSpeed;
                 }
             case FEEDTESTING:
-                spindexerMotorSpeed = 0.7;
-                towerMotorSpeed = 0.7;
+                spindexerMotorSpeed = -0.7;
+                towerMotorSpeed = -0.7;
                 break;
         }
     }

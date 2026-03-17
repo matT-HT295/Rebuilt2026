@@ -44,7 +44,7 @@ import frc.robot.subsystems.Drive.TunerConstants.TunerSwerveDrivetrain;
  * https://v6.docs.ctr-electronics.com/en/stable/docs/tuner/tuner-swerve/index.html
  */
 public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Subsystem {
-    private Vision vision = new Vision();
+    public Vision vision = new Vision();
     private Alliance allianceColor = DriverStation.getAlliance().get();
     private Field2d TheField = new Field2d();
     private static final double kSimLoopPeriod = 0.004; // 4 ms
@@ -427,76 +427,77 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         return yDistance;
     }
 
-    /**
-     * Update the pose estimation and std devs with new vision data
-     */
-    public void updateVisionMeasurements() {
-        var visionEst = vision.getEstimatedGlobalPose1();
-        var visionEst2 = vision.getEstimatedGlobalPose2();
-        var visionEst3 = vision.getEstimatedGlobalPose3();
+    // /**
+    //  * Update the pose estimation and std devs with new vision data
+    //  */
+    // public void updateVisionMeasurements() {
+    //     var visionEst = vision.getEstimatedGlobalPose1();
+    //     var visionEst2 = vision.getEstimatedGlobalPose2();
+    //     var visionEst3 = vision.getEstimatedGlobalPose3();
 
-        if (visionEst.isPresent() && visionEst2.isPresent() && visionEst3.isPresent()) {
-            var estPose = vision.getPoseFromCams();
-            var estStdDevs = vision.getEstimationStdDevs(estPose);
-            super.addVisionMeasurement(
-                    estPose,
-                    Utils.fpgaToCurrentTime(visionEst.get().timestampSeconds),
-                    estStdDevs);
-        } else if (visionEst.isPresent() && visionEst2.isPresent()) {
-            var estPose = vision.getPoseFromCams12();
-            var estStdDevs = vision.getEstimationStdDevs(estPose);
-            super.addVisionMeasurement(
-                    estPose,
-                    Utils.fpgaToCurrentTime(visionEst.get().timestampSeconds),
-                    estStdDevs);
-        } else if (visionEst2.isPresent() && visionEst3.isPresent()) {
-            var estPose = vision.getPoseFromCams23();
-            var estStdDevs = vision.getEstimationStdDevs(estPose);
-            super.addVisionMeasurement(
-                    estPose,
-                    Utils.fpgaToCurrentTime(visionEst2.get().timestampSeconds),
-                    estStdDevs);
-        } else if (visionEst.isPresent() && visionEst3.isPresent()) {
-            var estPose = vision.getPoseFromCams13();
-            var estStdDevs = vision.getEstimationStdDevs(estPose);
-            super.addVisionMeasurement(
-                    estPose,
-                    Utils.fpgaToCurrentTime(visionEst.get().timestampSeconds),
-                    estStdDevs);
-        } else if (visionEst.isPresent()) {
-            visionEst.ifPresent(est -> {
-                var estPose = est.estimatedPose.toPose2d();
-                var estStdDevs = vision.getEstimationStdDevs(estPose);
-                super.addVisionMeasurement(
-                        estPose,
-                        Utils.fpgaToCurrentTime(est.timestampSeconds),
-                        estStdDevs);
-            });
-        } else if (visionEst2.isPresent()) {
-            visionEst2.ifPresent(est -> {
-                var estPose = est.estimatedPose.toPose2d();
-                var estStdDevs = vision.getEstimationStdDevs(estPose);
-                super.addVisionMeasurement(
-                        estPose,
-                        Utils.fpgaToCurrentTime(est.timestampSeconds),
-                        estStdDevs);
-            });
-        } else if (visionEst3.isPresent()) {
-            visionEst3.ifPresent(est -> {
-                var estPose = est.estimatedPose.toPose2d();
-                var estStdDevs = vision.getEstimationStdDevs(estPose);
-                super.addVisionMeasurement(
-                        estPose,
-                        Utils.fpgaToCurrentTime(est.timestampSeconds),
-                        estStdDevs);
-            });
-        }
-    }
+    //     if (visionEst.isPresent() && visionEst2.isPresent() && visionEst3.isPresent()) {
+    //         var estPose = vision.getPoseFromCams();
+    //         var estStdDevs = vision.getEstimationStdDevs(estPose);
+    //         super.addVisionMeasurement(
+    //                 estPose,
+    //                 Utils.fpgaToCurrentTime(visionEst.get().timestampSeconds),
+    //                 estStdDevs);
+    //     } else if (visionEst.isPresent() && visionEst2.isPresent()) {
+    //         var estPose = vision.getPoseFromCams12();
+    //         var estStdDevs = vision.getEstimationStdDevs(estPose);
+    //         super.addVisionMeasurement(
+    //                 estPose,
+    //                 Utils.fpgaToCurrentTime(visionEst.get().timestampSeconds),
+    //                 estStdDevs);
+    //     } else if (visionEst2.isPresent() && visionEst3.isPresent()) {
+    //         var estPose = vision.getPoseFromCams23();
+    //         var estStdDevs = vision.getEstimationStdDevs(estPose);
+    //         super.addVisionMeasurement(
+    //                 estPose,
+    //                 Utils.fpgaToCurrentTime(visionEst2.get().timestampSeconds),
+    //                 estStdDevs);
+    //     } else if (visionEst.isPresent() && visionEst3.isPresent()) {
+    //         var estPose = vision.getPoseFromCams13();
+    //         var estStdDevs = vision.getEstimationStdDevs(estPose);
+    //         super.addVisionMeasurement(
+    //                 estPose,
+    //                 Utils.fpgaToCurrentTime(visionEst.get().timestampSeconds),
+    //                 estStdDevs);
+    //     } else if (visionEst.isPresent()) {
+    //         visionEst.ifPresent(est -> {
+    //             var estPose = est.estimatedPose.toPose2d();
+    //             var estStdDevs = vision.getEstimationStdDevs(estPose);
+    //             super.addVisionMeasurement(
+    //                     estPose,
+    //                     Utils.fpgaToCurrentTime(est.timestampSeconds),
+    //                     estStdDevs);
+    //         });
+    //     } else if (visionEst2.isPresent()) {
+    //         visionEst2.ifPresent(est -> {
+    //             var estPose = est.estimatedPose.toPose2d();
+    //             var estStdDevs = vision.getEstimationStdDevs(estPose);
+    //             super.addVisionMeasurement(
+    //                     estPose,
+    //                     Utils.fpgaToCurrentTime(est.timestampSeconds),
+    //                     estStdDevs);
+    //         });
+    //     } else if (visionEst3.isPresent()) {
+    //         visionEst3.ifPresent(est -> {
+    //             var estPose = est.estimatedPose.toPose2d();
+    //             var estStdDevs = vision.getEstimationStdDevs(estPose);
+    //             super.addVisionMeasurement(
+    //                     estPose,
+    //                     Utils.fpgaToCurrentTime(est.timestampSeconds),
+    //                     estStdDevs);
+    //         });
+    //     }
+    // }
 
     /* Pathplanner and CTRE Swerve config */
     private void configureAutoBuilder() {
         try {
             var config = RobotConfig.fromGUISettings();
+            
             AutoBuilder.configure(
                     () -> getState().Pose, // Supplier of current robot pose
                     this::resetPose, // Consumer for seeding pose against auto
@@ -712,16 +713,19 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
     @Override
     public void periodic() {
+        // vision.updateVision(this);
         TheField.getObject("robot").setPose(getPose());
-        if (vision.getEstimatedGlobalPose1().isPresent()) {
-            TheField.getObject("cam1").setPose(vision.getEstimatedGlobalPose1().get().estimatedPose.toPose2d());
-        }
-        if (vision.getEstimatedGlobalPose2().isPresent()) {
-            TheField.getObject("cam2").setPose(vision.getEstimatedGlobalPose2().get().estimatedPose.toPose2d());
-        }
-        if (vision.getEstimatedGlobalPose3().isPresent()) {
-            TheField.getObject("cam3").setPose(vision.getEstimatedGlobalPose3().get().estimatedPose.toPose2d());
-        }
+        // if (vision.getEstimatedGlobalPose1().isPresent()) {
+        //     TheField.getObject("cam1").setPose(
+        //         vision.getEstimatedGlobalPose1().ifPresent(est -> {est.estimatedPose.toPose2d();}));
+        // }
+        // if (vision.getEstimatedGlobalPose2().isPresent()) {
+        //     Pose2d checkPose = vision.getEstimatedGlobalPose2().get().estimatedPose.toPose2d();
+        //     TheField.getObject("cam2").setPose(checkPose);
+        // }
+        // if (vision.getEstimatedGlobalPose3().isPresent()) {
+        //     TheField.getObject("cam3").setPose(vision.getEstimatedGlobalPose3().get().estimatedPose.toPose2d());
+        // }
 
         /*
          * Periodically try to apply the operator perspective.
