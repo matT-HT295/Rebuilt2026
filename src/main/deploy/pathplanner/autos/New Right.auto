@@ -7,31 +7,31 @@
         {
           "type": "path",
           "data": {
-            "pathName": "RTrenchMid1"
+            "pathName": "RTrenchMid1.0"
           }
         },
         {
           "type": "named",
           "data": {
-            "name": "Auto Trench Shoot Right"
+            "name": "Rswipe pathFind"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "RTrenchMid1.2"
           }
         },
         {
           "type": "named",
           "data": {
-            "name": "FeederIdle"
+            "name": "Aim Shoot"
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "RTrenchMid2.0"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "RTrenchMid2.1"
+            "pathName": "RTrenchMid2"
           }
         },
         {
