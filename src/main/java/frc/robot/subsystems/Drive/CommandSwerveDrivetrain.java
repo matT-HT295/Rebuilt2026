@@ -31,6 +31,7 @@ import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Subsystem;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
+import frc.robot.Constants.FieldConstants;
 import frc.robot.Constants.ShooterConstants;
 import frc.robot.Constants.VisionConstants;
 import frc.robot.Constants.FieldConstants.ScoringZone;
@@ -68,47 +69,28 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         return this.getState().Pose;
     }
 
-    public ScoringZone getZone() {
+    public Translation2d getScoringLocation() {
         Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
         if (alliance.equals(Alliance.Blue)) {
             if (0 < getPose().getX() && getPose().getX() < 4.6) {
-                return ScoringZone.BLUE_HUB;
+                return FieldConstants.BLUE_HUB_POSE;
             } else {
                 if (4.03 < getPose().getY()) {
-                    return ScoringZone.BLUE_PASSING_2;
+                    return FieldConstants.BLUE_PASS_SPOT_2;
                 } else {
-                    return ScoringZone.BLUE_PASSING_1;
+                    return FieldConstants.BLUE_PASS_SPOT_1;
                 }
             }
         } else {
             if (11.9 < getPose().getX() && getPose().getX() < 16.6) {
-                return ScoringZone.RED_HUB;
+                return FieldConstants.RED_HUB_POSE;
             } else {
                 if (4.03 < getPose().getY()) {
-                    return ScoringZone.RED_PASSING_2;
+                    return FieldConstants.RED_PASS_SPOT_2;
                 } else {
-                    return ScoringZone.RED_PASSING_1;
+                    return FieldConstants.RED_PASS_SPOT_1;
                 }
             }
-        }
-    }
-
-    public boolean isInAllianceZone() {
-        double xDistance = getPose().getX();
-        if (allianceColor.equals(Alliance.Blue)) {
-            if (xDistance > 0 && xDistance < 4) {
-                return true;
-            } else {
-                return false;
-            }
-        } else if (allianceColor.equals(Alliance.Blue)) {
-            if (xDistance > 12.53 && xDistance < 16) {
-                return true;
-            } else {
-                return false;
-            }
-        } else {
-            return true;
         }
     }
 
@@ -141,36 +123,13 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
     private ChassisSpeeds filteredFieldSpeeds = new ChassisSpeeds(0, 0, 0);
 
-    public Translation2d getSOTFTurretAngle(String whereToAim) {
+    public Translation2d getSOTFTurretAngle() {
 
         // Current turret pose
         Pose2d turretPose = getCurrentTurretPose();
 
         // Hub position
-        Translation2d aimingTarget;
-        if (whereToAim == "hub") {
-            if (DriverStation.getAlliance().get() == Alliance.Red) {
-                aimingTarget = VisionConstants.RED_HUB_POSE;
-            } else {
-                aimingTarget = VisionConstants.BLUE_HUB_POSE;
-            }
-        } else if (whereToAim == "pass") {
-            if (DriverStation.getAlliance().get() == Alliance.Red) {
-                if (getPose().getY() > 4.03) {
-                    aimingTarget = VisionConstants.RED_PASS_SPOT_1;
-                } else {
-                    aimingTarget = VisionConstants.RED_PASS_SPOT_2;
-                }
-            } else {
-                if (getPose().getY() > 4.03) {
-                    aimingTarget = VisionConstants.BLUE_PASS_SPOT_2;
-                } else {
-                    aimingTarget = VisionConstants.BLUE_PASS_SPOT_1;
-                }
-            }
-        } else {
-            aimingTarget = VisionConstants.RED_HUB_POSE;
-        }
+        Translation2d aimingTarget = getScoringLocation();
 
         // Vector from turret to hub
         Translation2d toTarget = aimingTarget.minus(turretPose.getTranslation());
@@ -245,77 +204,73 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         return correctedVector;
     }
 
-    // public Rotation2d getSOTFTurretAngle() {
+    // solution 1.5
+    public Translation2d SOTF_CALC() {
 
-    // Pose2d turretPose = getCurrentTurretPose();
+        Pose2d turretPose = getCurrentTurretPose();
 
-    // Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
+        Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
 
-    // Translation2d realTarget =
-    // alliance == Alliance.Red
-    // ? VisionConstants.RED_HUB_POSE
-    // : VisionConstants.BLUE_HUB_POSE;
+        Translation2d realTarget = getScoringLocation();
+        // alliance == Alliance.Red
+        // ? VisionConstants.RED_HUB_POSE
+        // : VisionConstants.BLUE_HUB_POSE;
 
-    // Translation2d turretPos = turretPose.getTranslation();
+        Translation2d turretPos = turretPose.getTranslation();
 
-    // // Convert robot velocity to field frame
-    // ChassisSpeeds fieldSpeeds =
-    // ChassisSpeeds.fromRobotRelativeSpeeds(
-    // getState().Speeds,
-    // getPose().getRotation()
-    // );
+        // Convert robot velocity to field frame
+        ChassisSpeeds fieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
+                getState().Speeds,
+                getPose().getRotation());
 
-    // Translation2d robotVelocity =
-    // new Translation2d(
-    // fieldSpeeds.vxMetersPerSecond,
-    // fieldSpeeds.vyMetersPerSecond
-    // );
+        Translation2d robotVelocity = new Translation2d(
+                fieldSpeeds.vxMetersPerSecond,
+                fieldSpeeds.vyMetersPerSecond);
 
-    // double omega = fieldSpeeds.omegaRadiansPerSecond;
+        double omega = fieldSpeeds.omegaRadiansPerSecond;
 
-    // // turret offset from robot center
-    // Translation2d turretOffset =
-    // VisionConstants.turretToCenter.getTranslation();
+        // turret offset from robot center
+        Translation2d turretOffset = VisionConstants.turretToCenter.getTranslation();
 
-    // // rotational velocity of turret
-    // Translation2d rotationalVelocity =
-    // new Translation2d(
-    // -omega * turretOffset.getY(),
-    // omega * turretOffset.getX()
-    // );
+        // rotational velocity of turret
+        Translation2d rotationalVelocity = new Translation2d(
+                -omega * turretOffset.getY(),
+                omega * turretOffset.getX());
 
-    // Translation2d totalRobotVelocity =
-    // robotVelocity.plus(rotationalVelocity);
+        Translation2d totalRobotVelocity = robotVelocity.plus(rotationalVelocity);
 
-    // Translation2d virtualTarget = realTarget;
+        Translation2d virtualTarget = realTarget;
 
-    // // ITERATIVE SOLVE (2 passes)
-    // for (int i = 0; i < 2; i++) {
+        Translation2d toTarget = virtualTarget.minus(getCurrentTurretPose().getTranslation());
 
-    // Translation2d toTarget =
-    // virtualTarget.minus(turretPos);
+        double distance = toTarget.getNorm();
 
-    // double distance = toTarget.getNorm();
+        double timeOfFlight = ShooterConstants.timeOfFlightInterpolation
+                .getPrediction(distance);
 
-    // double timeOfFlight =
-    // ShooterConstants.timeOfFlightInterpolation
-    // .getPrediction(distance);
+        // ITERATIVE SOLVE (2 passes)
+        for (int i = 0; i < 2; i++) {
 
-    // virtualTarget =
-    // realTarget.minus(
-    // totalRobotVelocity.times(timeOfFlight)
-    // );
-    // }
+            Translation2d predictedTurretPos = turretPos.plus(totalRobotVelocity.times(timeOfFlight));
 
-    // Translation2d correctedVector =
-    // virtualTarget.minus(turretPos);
+            toTarget = virtualTarget.minus(predictedTurretPos);
 
-    // Rotation2d turretAngle =
-    // correctedVector.getAngle()
-    // .minus(getPose().getRotation());
+            distance = toTarget.getNorm();
 
-    // return turretAngle;
-    // }
+            timeOfFlight = ShooterConstants.timeOfFlightInterpolation
+                    .getPrediction(distance);
+
+            virtualTarget = realTarget.minus(
+                    totalRobotVelocity.times(timeOfFlight));
+        }
+
+        Translation2d correctedVector = virtualTarget.minus(turretPos);
+
+        Rotation2d turretAngle = correctedVector.getAngle()
+                .minus(getPose().getRotation());
+
+        return correctedVector;
+    }
 
     public Pose2d getCurrentTurretPose() {
         Pose2d turretPose = getPose().transformBy(VisionConstants.turretToCenter);
@@ -324,8 +279,8 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     }
 
     public Translation2d getHub() {
-        Translation2d goalLocation = DriverStation.getAlliance().get() == Alliance.Red ? VisionConstants.RED_HUB_POSE
-                : VisionConstants.BLUE_HUB_POSE;
+        Translation2d goalLocation = DriverStation.getAlliance().get() == Alliance.Red ? FieldConstants.RED_HUB_POSE
+                : FieldConstants.BLUE_HUB_POSE;
         return goalLocation;
     }
 
@@ -408,9 +363,9 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         Alliance allianceColor = DriverStation.getAlliance().get();
 
         if (allianceColor == Alliance.Red) {
-            xDistance = VisionConstants.RED_HUB_POSE.getX() - getCurrentTurretPose().getX();
+            xDistance = FieldConstants.RED_HUB_POSE.getX() - getCurrentTurretPose().getX();
         } else {
-            xDistance = VisionConstants.BLUE_HUB_POSE.getX() - getCurrentTurretPose().getX();
+            xDistance = FieldConstants.BLUE_HUB_POSE.getX() - getCurrentTurretPose().getX();
         }
         return xDistance;
     }
@@ -420,84 +375,85 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         Alliance allianceColor = DriverStation.getAlliance().get();
 
         if (allianceColor == Alliance.Red) {
-            yDistance = VisionConstants.RED_HUB_POSE.getY() - getCurrentTurretPose().getY();
+            yDistance = FieldConstants.RED_HUB_POSE.getY() - getCurrentTurretPose().getY();
         } else {
-            yDistance = VisionConstants.BLUE_HUB_POSE.getY() - getCurrentTurretPose().getY();
+            yDistance = FieldConstants.BLUE_HUB_POSE.getY() - getCurrentTurretPose().getY();
         }
         return yDistance;
     }
 
     // /**
-    //  * Update the pose estimation and std devs with new vision data
-    //  */
+    // * Update the pose estimation and std devs with new vision data
+    // */
     // public void updateVisionMeasurements() {
-    //     var visionEst = vision.getEstimatedGlobalPose1();
-    //     var visionEst2 = vision.getEstimatedGlobalPose2();
-    //     var visionEst3 = vision.getEstimatedGlobalPose3();
+    // var visionEst = vision.getEstimatedGlobalPose1();
+    // var visionEst2 = vision.getEstimatedGlobalPose2();
+    // var visionEst3 = vision.getEstimatedGlobalPose3();
 
-    //     if (visionEst.isPresent() && visionEst2.isPresent() && visionEst3.isPresent()) {
-    //         var estPose = vision.getPoseFromCams();
-    //         var estStdDevs = vision.getEstimationStdDevs(estPose);
-    //         super.addVisionMeasurement(
-    //                 estPose,
-    //                 Utils.fpgaToCurrentTime(visionEst.get().timestampSeconds),
-    //                 estStdDevs);
-    //     } else if (visionEst.isPresent() && visionEst2.isPresent()) {
-    //         var estPose = vision.getPoseFromCams12();
-    //         var estStdDevs = vision.getEstimationStdDevs(estPose);
-    //         super.addVisionMeasurement(
-    //                 estPose,
-    //                 Utils.fpgaToCurrentTime(visionEst.get().timestampSeconds),
-    //                 estStdDevs);
-    //     } else if (visionEst2.isPresent() && visionEst3.isPresent()) {
-    //         var estPose = vision.getPoseFromCams23();
-    //         var estStdDevs = vision.getEstimationStdDevs(estPose);
-    //         super.addVisionMeasurement(
-    //                 estPose,
-    //                 Utils.fpgaToCurrentTime(visionEst2.get().timestampSeconds),
-    //                 estStdDevs);
-    //     } else if (visionEst.isPresent() && visionEst3.isPresent()) {
-    //         var estPose = vision.getPoseFromCams13();
-    //         var estStdDevs = vision.getEstimationStdDevs(estPose);
-    //         super.addVisionMeasurement(
-    //                 estPose,
-    //                 Utils.fpgaToCurrentTime(visionEst.get().timestampSeconds),
-    //                 estStdDevs);
-    //     } else if (visionEst.isPresent()) {
-    //         visionEst.ifPresent(est -> {
-    //             var estPose = est.estimatedPose.toPose2d();
-    //             var estStdDevs = vision.getEstimationStdDevs(estPose);
-    //             super.addVisionMeasurement(
-    //                     estPose,
-    //                     Utils.fpgaToCurrentTime(est.timestampSeconds),
-    //                     estStdDevs);
-    //         });
-    //     } else if (visionEst2.isPresent()) {
-    //         visionEst2.ifPresent(est -> {
-    //             var estPose = est.estimatedPose.toPose2d();
-    //             var estStdDevs = vision.getEstimationStdDevs(estPose);
-    //             super.addVisionMeasurement(
-    //                     estPose,
-    //                     Utils.fpgaToCurrentTime(est.timestampSeconds),
-    //                     estStdDevs);
-    //         });
-    //     } else if (visionEst3.isPresent()) {
-    //         visionEst3.ifPresent(est -> {
-    //             var estPose = est.estimatedPose.toPose2d();
-    //             var estStdDevs = vision.getEstimationStdDevs(estPose);
-    //             super.addVisionMeasurement(
-    //                     estPose,
-    //                     Utils.fpgaToCurrentTime(est.timestampSeconds),
-    //                     estStdDevs);
-    //         });
-    //     }
+    // if (visionEst.isPresent() && visionEst2.isPresent() &&
+    // visionEst3.isPresent()) {
+    // var estPose = vision.getPoseFromCams();
+    // var estStdDevs = vision.getEstimationStdDevs(estPose);
+    // super.addVisionMeasurement(
+    // estPose,
+    // Utils.fpgaToCurrentTime(visionEst.get().timestampSeconds),
+    // estStdDevs);
+    // } else if (visionEst.isPresent() && visionEst2.isPresent()) {
+    // var estPose = vision.getPoseFromCams12();
+    // var estStdDevs = vision.getEstimationStdDevs(estPose);
+    // super.addVisionMeasurement(
+    // estPose,
+    // Utils.fpgaToCurrentTime(visionEst.get().timestampSeconds),
+    // estStdDevs);
+    // } else if (visionEst2.isPresent() && visionEst3.isPresent()) {
+    // var estPose = vision.getPoseFromCams23();
+    // var estStdDevs = vision.getEstimationStdDevs(estPose);
+    // super.addVisionMeasurement(
+    // estPose,
+    // Utils.fpgaToCurrentTime(visionEst2.get().timestampSeconds),
+    // estStdDevs);
+    // } else if (visionEst.isPresent() && visionEst3.isPresent()) {
+    // var estPose = vision.getPoseFromCams13();
+    // var estStdDevs = vision.getEstimationStdDevs(estPose);
+    // super.addVisionMeasurement(
+    // estPose,
+    // Utils.fpgaToCurrentTime(visionEst.get().timestampSeconds),
+    // estStdDevs);
+    // } else if (visionEst.isPresent()) {
+    // visionEst.ifPresent(est -> {
+    // var estPose = est.estimatedPose.toPose2d();
+    // var estStdDevs = vision.getEstimationStdDevs(estPose);
+    // super.addVisionMeasurement(
+    // estPose,
+    // Utils.fpgaToCurrentTime(est.timestampSeconds),
+    // estStdDevs);
+    // });
+    // } else if (visionEst2.isPresent()) {
+    // visionEst2.ifPresent(est -> {
+    // var estPose = est.estimatedPose.toPose2d();
+    // var estStdDevs = vision.getEstimationStdDevs(estPose);
+    // super.addVisionMeasurement(
+    // estPose,
+    // Utils.fpgaToCurrentTime(est.timestampSeconds),
+    // estStdDevs);
+    // });
+    // } else if (visionEst3.isPresent()) {
+    // visionEst3.ifPresent(est -> {
+    // var estPose = est.estimatedPose.toPose2d();
+    // var estStdDevs = vision.getEstimationStdDevs(estPose);
+    // super.addVisionMeasurement(
+    // estPose,
+    // Utils.fpgaToCurrentTime(est.timestampSeconds),
+    // estStdDevs);
+    // });
+    // }
     // }
 
     /* Pathplanner and CTRE Swerve config */
     private void configureAutoBuilder() {
         try {
             var config = RobotConfig.fromGUISettings();
-            
+
             AutoBuilder.configure(
                     () -> getState().Pose, // Supplier of current robot pose
                     this::resetPose, // Consumer for seeding pose against auto
@@ -716,15 +672,17 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         // vision.updateVision(this);
         TheField.getObject("robot").setPose(getPose());
         // if (vision.getEstimatedGlobalPose1().isPresent()) {
-        //     TheField.getObject("cam1").setPose(
-        //         vision.getEstimatedGlobalPose1().ifPresent(est -> {est.estimatedPose.toPose2d();}));
+        // TheField.getObject("cam1").setPose(
+        // vision.getEstimatedGlobalPose1().ifPresent(est ->
+        // {est.estimatedPose.toPose2d();}));
         // }
         // if (vision.getEstimatedGlobalPose2().isPresent()) {
-        //     Pose2d checkPose = vision.getEstimatedGlobalPose2().get().estimatedPose.toPose2d();
-        //     TheField.getObject("cam2").setPose(checkPose);
+        // Pose2d checkPose =
+        // vision.getEstimatedGlobalPose2().get().estimatedPose.toPose2d();
+        // TheField.getObject("cam2").setPose(checkPose);
         // }
         // if (vision.getEstimatedGlobalPose3().isPresent()) {
-        //     TheField.getObject("cam3").setPose(vision.getEstimatedGlobalPose3().get().estimatedPose.toPose2d());
+        // TheField.getObject("cam3").setPose(vision.getEstimatedGlobalPose3().get().estimatedPose.toPose2d());
         // }
 
         /*

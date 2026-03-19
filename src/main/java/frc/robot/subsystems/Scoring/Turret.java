@@ -14,6 +14,7 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -21,11 +22,13 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.TurretConstants;
 import frc.robot.Constants.TurretConstants.TurretWantedState;
 import frc.robot.Constants.FieldConstants.ScoringZone;
+import frc.robot.Constants.FieldConstants;
+import frc.robot.Constants.ShooterConstants;
 import frc.robot.subsystems.Drive.CommandSwerveDrivetrain;
 import frc.robot.subsystems.Lights.LEDSubsystem_WPIlib;
 import frc.robot.subsystems.Lights.LEDSubsystem_WPIlib.LEDTarget;
+import frc.util.Interpolation.LoggedTunableNumber;
 import frc.robot.Constants.TurretConstants.SystemState;
-import frc.util.LoggedTunableNumber;
 
 public class Turret extends SubsystemBase {
     private final CommandSwerveDrivetrain drivetrain;
@@ -60,7 +63,7 @@ public class Turret extends SubsystemBase {
     SystemState systemState = SystemState.IDLING;
 
     /** Creates a new Turret */
-    public Turret(CommandSwerveDrivetrain drivetrain/* ,*/ /*LEDSubsystem_WPIlib leds*/) {
+    public Turret(CommandSwerveDrivetrain drivetrain/* , */ /* LEDSubsystem_WPIlib leds */) {
         this.drivetrain = drivetrain;
         // this.leds = leds;
 
@@ -153,99 +156,35 @@ public class Turret extends SubsystemBase {
                 position = 0.0;
                 break;
             case IDLE_AIMING:
-                ScoringZone scoringZone = drivetrain.getZone();
-                String zoneString = "";
-                if (scoringZone == ScoringZone.BLUE_HUB || scoringZone == ScoringZone.RED_HUB) {
-                    zoneString = "hub";
-                    double target1 = 0;
-                    double currentTurretToRobotAngle1 = turretMotor.getPosition().getValueAsDouble();
-                    // calculate robot angle relative to field
-                    Rotation2d currentRobotAngle1 = drivetrain.getTurretPose().getRotation();
-                    Rotation2d angleToHub1 = drivetrain.getSOTFTurretAngle(zoneString).getAngle();
 
-                    // calculate desired angle of turret relative to hub
-                    // double angleToHub = (Math.atan2(passSpot.getY(), passSpot.getX()));
+                double target1 = 0;
+                double currentTurretToRobotAngle1 = turretMotor.getPosition().getValueAsDouble();
+                // calculate robot angle relative to field
+                Rotation2d currentRobotAngle1 = drivetrain.getTurretPose().getRotation();
+                Rotation2d angleToHub1 = drivetrain.getSOTFTurretAngle().getAngle();
 
-                    // calculate desired angle of turret relative to robot
-                    Rotation2d desiredTurretAngle1 = (angleToHub1).minus(currentRobotAngle1);
-                    // convert to rotations
-                    double convertedTurretAngle1 = desiredTurretAngle1.getDegrees() / 360;
+                // calculate desired angle of turret relative to hub
+                // double angleToHub = (Math.atan2(passSpot.getY(), passSpot.getX()));
 
-                    // compute shortest delta between branches
-                    double delta1 = convertedTurretAngle1 - (currentTurretToRobotAngle1);
-                    delta1 = Math.IEEEremainder(delta1, 1.0);
+                // calculate desired angle of turret relative to robot
+                Rotation2d desiredTurretAngle1 = (angleToHub1).minus(currentRobotAngle1);
+                // convert to rotations
+                double convertedTurretAngle1 = desiredTurretAngle1.getDegrees() / 360;
 
-                    // now apply
-                    target1 = currentTurretToRobotAngle1 + delta1;
+                // compute shortest delta between branches
+                double delta1 = convertedTurretAngle1 - (currentTurretToRobotAngle1);
+                delta1 = Math.IEEEremainder(delta1, 1.0);
 
-                    // now enforce mechanical limits with wrap only if truly needed
-                    while (target1 > CCWlimit)
-                        target1 -= 1.0;
-                    while (target1 < CWLimit)
-                        target1 += 1.0;
+                // now apply
+                target1 = currentTurretToRobotAngle1 + delta1;
 
-                    position = target1;
-                } else if (scoringZone == ScoringZone.NO_TRACK) {
-                    zoneString = "hub";
-                    double target1 = 0;
-                    double currentTurretToRobotAngle1 = turretMotor.getPosition().getValueAsDouble();
-                    // calculate robot angle relative to field
-                    Rotation2d currentRobotAngle1 = drivetrain.getTurretPose().getRotation();
-                    Rotation2d angleToHub1 = drivetrain.getSOTFTurretAngle(zoneString).getAngle();
+                // now enforce mechanical limits with wrap only if truly needed
+                while (target1 > CCWlimit)
+                    target1 -= 1.0;
+                while (target1 < CWLimit)
+                    target1 += 1.0;
 
-                    // calculate desired angle of turret relative to hub
-                    // double angleToHub = (Math.atan2(passSpot.getY(), passSpot.getX()));
-
-                    // calculate desired angle of turret relative to robot
-                    Rotation2d desiredTurretAngle1 = (angleToHub1).minus(currentRobotAngle1);
-                    // convert to rotations
-                    double convertedTurretAngle1 = desiredTurretAngle1.getDegrees() / 360;
-
-                    // compute shortest delta between branches
-                    double delta1 = convertedTurretAngle1 - (currentTurretToRobotAngle1);
-                    delta1 = Math.IEEEremainder(delta1, 1.0);
-
-                    // now apply
-                    target1 = currentTurretToRobotAngle1 + delta1;
-
-                    // now enforce mechanical limits with wrap only if truly needed
-                    while (target1 > CCWlimit)
-                        target1 -= 1.0;
-                    while (target1 < CWLimit)
-                        target1 += 1.0;
-
-                    position = target1;
-                } else {
-                    zoneString = "pass";
-                    double target1 = 0;
-                    double currentTurretToRobotAngle1 = turretMotor.getPosition().getValueAsDouble();
-                    // calculate robot angle relative to field
-                    Rotation2d currentRobotAngle1 = drivetrain.getTurretPose().getRotation();
-                    Rotation2d angleToHub1 = drivetrain.getSOTFTurretAngle(zoneString).getAngle();
-
-                    // calculate desired angle of turret relative to hub
-                    // double angleToHub = (Math.atan2(passSpot.getY(), passSpot.getX()));
-
-                    // calculate desired angle of turret relative to robot
-                    Rotation2d desiredTurretAngle1 = (angleToHub1).minus(currentRobotAngle1);
-                    // convert to rotations
-                    double convertedTurretAngle1 = desiredTurretAngle1.getDegrees() / 360;
-
-                    // compute shortest delta between branches
-                    double delta1 = convertedTurretAngle1 - (currentTurretToRobotAngle1);
-                    delta1 = Math.IEEEremainder(delta1, 1.0);
-
-                    // now apply
-                    target1 = currentTurretToRobotAngle1 + delta1;
-
-                    // now enforce mechanical limits with wrap only if truly needed
-                    while (target1 > CCWlimit)
-                        target1 -= 1.0;
-                    while (target1 < CWLimit)
-                        target1 += 1.0;
-
-                    position = target1;
-                }
+                position = target1;
                 break;
             case PASS_AIMING:
                 double target = 0;
@@ -268,7 +207,7 @@ public class Turret extends SubsystemBase {
                 double currentTurretToRobotAngle = turretMotor.getPosition().getValueAsDouble();
                 // calculate robot angle relative to field
                 Rotation2d currentRobotAngle = drivetrain.getPose().getRotation();
-                Rotation2d angleToHub = drivetrain.getSOTFTurretAngle("pass").getAngle();
+                Rotation2d angleToHub = drivetrain.getSOTFTurretAngle().getAngle();
 
                 // calculate desired angle of turret relative to hub
                 // double angleToHub = (Math.atan2(passSpot.getY(), passSpot.getX()));
@@ -305,7 +244,19 @@ public class Turret extends SubsystemBase {
                 double currentTurretToRobotAngle2 = turretMotor.getPosition().getValueAsDouble();
                 // calculate robot angle relative to field
                 Rotation2d currentRobotAngle2 = drivetrain.getPose().getRotation();
-                Rotation2d angleToHub2 = drivetrain.getSOTFTurretAngle("hub").getAngle();
+                Rotation2d angleToHub2 = drivetrain.getSOTFTurretAngle().getAngle();
+
+                /* OPTION 2 */
+                // angleToHub = drivetrain.SOTF_CALC().getAngle()
+
+                /* OPTION 3 */
+                // ChassisSpeeds rawFieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
+                // drivetrain.getState().Speeds,
+                // drivetrain.getPose().getRotation());
+                // Rotation2d angleToHub2 = Rotation2d.fromDegrees(ShotCalc.calculateSOTF(
+                // drivetrain.getTurretPose().getTranslation(),
+                // rawFieldSpeeds, drivetrain.getScoringLocation(),
+                // ShooterConstants.latencyCompensation).turretAngle());
 
                 // calculate desired angle of turret relative to hub
                 // double angleToHub2 = (Math.atan2(drivetrain.getYfromHub(),
@@ -359,6 +310,18 @@ public class Turret extends SubsystemBase {
         } else {
             return false;
         }
+    }
+
+    public void enableEcoModeTurret() {
+        turretMotorConfig.CurrentLimits.StatorCurrentLimit = 40;
+        turretMotorConfig.CurrentLimits.SupplyCurrentLimit = 40;
+        turretMotor.getConfigurator().apply(turretMotorConfig);
+    }
+
+    public void disableEcoModeTurret() {
+        turretMotorConfig.CurrentLimits.StatorCurrentLimit = TurretConstants.StatorCurrentLimit;
+        turretMotorConfig.CurrentLimits.SupplyCurrentLimit = TurretConstants.SupplyCurrentLimit;
+        turretMotor.getConfigurator().apply(turretMotorConfig);
     }
 
     /**
