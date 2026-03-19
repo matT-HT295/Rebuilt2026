@@ -4,11 +4,15 @@
 
 package frc.robot.subsystems.Intake;
 
+import java.security.InvalidKeyException;
+
+import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.StatusCode;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.DutyCycleOut;
 import com.ctre.phoenix6.controls.MotionMagicExpoVoltage;
 import com.ctre.phoenix6.controls.MotionMagicVelocityVoltage;
+import com.ctre.phoenix6.hardware.CANrange;
 import com.ctre.phoenix6.hardware.TalonFX;
 
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -16,13 +20,15 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.IntakeConstants;
 import frc.robot.Constants.IntakeConstants.IntakeWantedState;
 import frc.robot.Constants.IntakeConstants.SystemState;
-import frc.util.LoggedTunableNumber;
+import frc.util.Interpolation.LoggedTunableNumber;
 
 public class Intake extends SubsystemBase {
     /* MOTORS */
     private TalonFX intakeMotor = new TalonFX(IntakeConstants.intakeMotorID, "rio");
     public TalonFX intakeExtensionMotor = new TalonFX(IntakeConstants.intakeExtensionMotorID, "rio");
     private TalonFXConfiguration intakeMotorConfig = new TalonFXConfiguration();
+    /* SENSOR */
+    private CANrange canRange = new CANrange(IntakeConstants.canRangeID, CANBus.roboRIO());
     // for velocity control
     private double motorspeed = 0.0;
     final MotionMagicVelocityVoltage mm_request = new MotionMagicVelocityVoltage(0);
@@ -95,21 +101,41 @@ public class Intake extends SubsystemBase {
     private SystemState changeCurrentSystemState() {
         return switch (wantedState) {
             case IDLE:
+                if (systemState == SystemState.SCORING) {
+                    intakeMotorConfig.Voltage.PeakReverseVoltage = IntakeConstants.intakeMotionMagicExpoK_A;
+                    intakeExtensionMotor.getConfigurator().apply(intakeMotorConfig);
+                }
                 yield SystemState.IDLING;
             case INTAKE:
+                if (systemState == SystemState.SCORING) {
+                    intakeMotorConfig.Voltage.PeakReverseVoltage = IntakeConstants.intakeMotionMagicExpoK_A;
+                    intakeExtensionMotor.getConfigurator().apply(intakeMotorConfig);
+                }
                 yield SystemState.INTAKING;
             case RETRACT:
+                if (systemState == SystemState.SCORING) {
+                    intakeMotorConfig.Voltage.PeakReverseVoltage = IntakeConstants.intakeMotionMagicExpoK_A;
+                    intakeExtensionMotor.getConfigurator().apply(intakeMotorConfig);
+                }
                 yield SystemState.RETRACTING;
             case RESET:
+                if (systemState == SystemState.SCORING) {
+                    intakeMotorConfig.Voltage.PeakReverseVoltage = IntakeConstants.intakeMotionMagicExpoK_A;
+                    intakeExtensionMotor.getConfigurator().apply(intakeMotorConfig);
+                }
                 yield SystemState.RESETING;
             case SCORE:
                 yield SystemState.SCORING;
             case OUTTAKE:
+                if (systemState == SystemState.SCORING) {
+                    intakeMotorConfig.Voltage.PeakReverseVoltage = IntakeConstants.intakeMotionMagicExpoK_A;
+                    intakeExtensionMotor.getConfigurator().apply(intakeMotorConfig);
+                }
                 yield SystemState.OUTTAKING;
         };
     }
 
-    private void applyState(int counter) {
+    private void applyState() {
         // Timer timer = new Timer();
         switch (systemState) {
             case IDLING:
@@ -125,23 +151,39 @@ public class Intake extends SubsystemBase {
                 position = IntakeConstants.retractingPos;
                 break;
             case RESETING:
-                intakeExtensionMotor.setPosition(0);
+                position = intakeExtensionMotor.getPosition().getValueAsDouble();
+                if (canRange.getDistance().getValueAsDouble() > IntakeConstants.intakeExtensionHomingThreshold) {
+                    intakeExtensionMotor.set(0);
+                    intakeExtensionMotor.setPosition(0);
+                } else {
+                    intakeExtensionMotor.set(-0.01);
+                }
                 break;
             case SCORING:
-                motorspeed = IntakeConstants.intakingSpeed;
-                counter++;
-                if ((counter / 50) % 2 == 0) {
-                    if (position == IntakeConstants.retractingPos) {
-                        position = IntakeConstants.intakingPosition;
-                    } else {
-                        position = IntakeConstants.retractingPos;
-                    }
+                if (intakeMotorConfig.MotionMagic.MotionMagicExpo_kA != IntakeConstants.slowerIntakeKa) {
+                    intakeMotorConfig.MotionMagic.MotionMagicExpo_kA = IntakeConstants.slowerIntakeKa;
+                    intakeExtensionMotor.getConfigurator().apply(intakeMotorConfig);
                 }
+                position = 0;
                 break;
             case OUTTAKING:
                 motorspeed = -IntakeConstants.intakingSpeed;
                 break;
         }
+    }
+
+    public void enableEcoModeIntake() {
+        intakeMotorConfig.CurrentLimits.StatorCurrentLimit = 50;
+        intakeMotorConfig.CurrentLimits.SupplyCurrentLimit = 50;
+        intakeExtensionMotor.getConfigurator().apply(intakeMotorConfig);
+        intakeMotor.getConfigurator().apply(intakeMotorConfig);
+    }
+
+    public void disableEcoModeIntake() {
+        intakeMotorConfig.CurrentLimits.StatorCurrentLimit = IntakeConstants.StatorCurrentLimit;
+        intakeMotorConfig.CurrentLimits.SupplyCurrentLimit = IntakeConstants.SupplyCurrentLimit;
+        intakeExtensionMotor.getConfigurator().apply(intakeMotorConfig);
+        intakeMotor.getConfigurator().apply(intakeMotorConfig);
     }
 
     private void LogValues() {
@@ -155,13 +197,13 @@ public class Intake extends SubsystemBase {
 
     @Override
     public void periodic() {
-        int counter = 0;
         LogValues();
         systemState = changeCurrentSystemState();
-        applyState(counter);
+        applyState();
         // example of how to control motor for velocity
         // intakeMotor.setControl(mm_request.withVelocity(motorspeed));
         // example of how to control motor for position
+
         intakeExtensionMotor.setControl(mmE_request.withPosition(position));
         // setting the request to the motor controller
         intakeMotor.setControl(m_leftrequestOut.withOutput(motorspeed));

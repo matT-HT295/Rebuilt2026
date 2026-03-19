@@ -19,7 +19,8 @@ import frc.robot.subsystems.Intake.Intake;
 
 import frc.robot.subsystems.Lights.LEDSubsystem_WPIlib;
 import frc.robot.subsystems.Lights.LEDSubsystem_WPIlib.LEDTarget;
-import frc.robot.commands.HomeIntake;
+import frc.robot.commands.Drive.DriveToLocation;
+import frc.robot.commands.Intake.HomeIntake;
 import frc.robot.commands.Lights.WPIlib.DisableLED;
 import frc.robot.commands.Lights.WPIlib.SetTwinklePattern;
 import static edu.wpi.first.units.Units.MetersPerSecond;
@@ -30,9 +31,14 @@ import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
+import com.pathplanner.lib.events.EventTrigger;
+import com.pathplanner.lib.util.swerve.SwerveSetpointGenerator;
 
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.event.EventLoop;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -40,6 +46,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
+import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 
@@ -53,7 +60,7 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
  * subsystems, commands, and trigger mappings) should be declared here.
  */
 public class RobotContainer {
-        public final Timer matchTimer = new Timer();
+    public final Timer matchTimer = new Timer();
 
     // The robot's subsystems and commands are defined here...
     public final LEDSubsystem_WPIlib normalLights = new LEDSubsystem_WPIlib();
@@ -62,7 +69,7 @@ public class RobotContainer {
     public final Turret turret = new Turret(drivetrain);
     public final Shooter shooter = new Shooter(drivetrain);
     public final Feeder feeder = new Feeder(turret, shooter, drivetrain);
-//     private final Vision vision = new Vision();
+    // private final Vision vision = new Vision();
     public final MatchInformation matchInformation = new MatchInformation(matchTimer);
     public SendableChooser<Command> sendableChooser = new SendableChooser<>();
 
@@ -96,12 +103,20 @@ public class RobotContainer {
             .withHeadingPID(5, 0, 0);
 
     // triggers
-    // Trigger activeHubWarning = new Trigger(() ->
-    // matchInformation.shiftWarning_active == true);
-    // Trigger inactiveHubWarning = new Trigger(() ->
-    // matchInformation.shiftWarning_active == false);
     Trigger hubAimLights = new Trigger(() -> turret.getState() == TurretWantedState.AIM_HUB);
     Trigger passsAimLights = new Trigger(() -> turret.getState() == TurretWantedState.AIM_PASS);
+    Trigger ecoMode = new Trigger(() -> checkBattery());
+
+    private boolean checkBattery() {
+        if (RobotController.getBatteryVoltage() < 10) {
+            double check = Timer.getFPGATimestamp() + 4;
+            if (Timer.getFPGATimestamp() > check) {
+                return true;
+            }
+            return false;
+        }
+        return false;
+    }
 
     /**
      * The container for the robot. Contains subsystems, OI devices, and commands.
@@ -134,10 +149,15 @@ public class RobotContainer {
         drivetrain.setDefaultCommand(
                 // Drivetrain will execute this command periodically
                 drivetrain.applyRequest(() -> {
-                    return drive.withVelocityX(-driver.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
-                            .withVelocityY(-driver.getLeftX() * MaxSpeed) // Drive left with negative X (left)
-                            .withRotationalRate(-driver.getRightX() * MaxAngularRate); // Drive counterclockwise with
-                                                                                       // negative X (left)
+                    double slowFactor = operator.rightTrigger().getAsBoolean() ? .5 : 1.0;
+                    return drive.withVelocityX(-driver.getLeftY() * MaxSpeed * slowFactor) // Drive forward with
+                                                                                           // negative Y (forward)
+                            .withVelocityY(-driver.getLeftX() * MaxSpeed * slowFactor) // Drive left with negative X
+                                                                                       // (left)
+                            .withRotationalRate(-driver.getRightX() * MaxAngularRate * slowFactor); // Drive
+                                                                                                    // counterclockwise
+                                                                                                    // with
+                    // negative X (left)
                 }));
         // gyro reset
         driver.start().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
@@ -181,7 +201,18 @@ public class RobotContainer {
         driver.leftTrigger()
                 .onTrue(new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.OUTTAKE)))
                 .onFalse(new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.IDLE)));
-
+        driver.povUp()
+                .onTrue(
+                        new ParallelCommandGroup(
+                                new InstantCommand(() -> intake.enableEcoModeIntake()),
+                                new InstantCommand(() -> turret.enableEcoModeTurret()),
+                                new InstantCommand(() -> feeder.enableEcoModeFeeder())));
+        driver.povDown()
+                .onTrue(
+                        new ParallelCommandGroup(
+                                new InstantCommand(() -> intake.disableEcoModeIntake()),
+                                new InstantCommand(() -> turret.disableEcoModeTurret()),
+                                new InstantCommand(() -> feeder.disableEcoModeFeeder())));
         // Brake
         // driver.a().whileTrue(drivetrain.applyRequest(() -> brake));
         // driver.b().whileTrue(drivetrain.applyRequest(() ->
@@ -207,7 +238,6 @@ public class RobotContainer {
                         new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.WAIT)),
                         new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.IDLE)),
                         new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.IDLE))));
-
 
         // right trench shot
         operator.b()
@@ -250,12 +280,10 @@ public class RobotContainer {
         // aiming offset
         operator.povRight()
                 .onTrue(
-                        new InstantCommand(() -> turret.applyLeftOffset())
-                );
+                        new InstantCommand(() -> turret.applyLeftOffset()));
         operator.povLeft()
                 .onTrue(
-                        new InstantCommand(() -> turret.applyRightOffset())
-                );
+                        new InstantCommand(() -> turret.applyRightOffset()));
 
         // passing
         operator.rightBumper()
@@ -269,20 +297,6 @@ public class RobotContainer {
                         new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.IDLE))));
 
         /******* CONDITIONAL CONTROLS ***********/
-
-        // activeHubWarning
-        // .onTrue(new SetBlinkingPattern(normalLights,
-        // LEDSubsystem_WPIlib.LEDTarget.SIDES,
-        // LEDPattern.solid(LightsConstants.RBGColors.get("green")), 0.5, 0.5))
-        // .onFalse(new DisableLED(normalLights)); // NEVER USE DURING COMPETITIONS: It
-        // turns off the LED strips till robot restarts. Safety measure only!!!!!
-
-        // inactiveHubWarning
-        // .onTrue(new SetBlinkingPattern(normalLights,
-        // LEDSubsystem_WPIlib.LEDTarget.SIDES,
-        // LEDPattern.solid(LightsConstants.RBGColors.get("red")), 0.5, 0.5))
-        // .onFalse(new DisableLED(normalLights)); // NEVER USE DURING COMPETITIONS: It
-        // turns off the LED strips till robot restarts. Safety measure only!!!!!
 
         // hubAimLights
         // .onTrue(new ScrollPattern(normalLights, LEDSubsystem_WPIlib.LEDTarget.SIDES,
@@ -312,6 +326,7 @@ public class RobotContainer {
                 LightsConstants.RBGColors.get("gold"),
                 2.5).schedule();
     }
+
     public void LEDSHUTOFF() {
 
         // new DisableLED(normalLights).schedule();
@@ -393,6 +408,17 @@ public class RobotContainer {
 
         NamedCommands.registerCommand("Intake",
                 new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.INTAKE)));
+
+        NamedCommands.registerCommand("Rswipe pathFind",
+                drivetrain.defer(
+                        () -> DriveToLocation.pathFindTo(new Pose2d(8.05, 2.75, Rotation2d.fromDegrees(90)),
+                                drivetrain)));
+
+        NamedCommands.registerCommand("Lswipe pathFind",
+                drivetrain.defer(
+                        () -> DriveToLocation.pathFindTo(new Pose2d(8.05, 5.25, Rotation2d.fromDegrees(90)),
+                                drivetrain)));
+
     }
 
 }

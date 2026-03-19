@@ -17,11 +17,12 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants.FeederConstants;
 import frc.robot.Constants.ShooterConstants;
 import frc.robot.Constants.ShooterConstants.ShooterWantedState;
 import frc.robot.Constants.ShooterConstants.SystemState;
 import frc.robot.subsystems.Drive.CommandSwerveDrivetrain;
-import frc.util.LoggedTunableNumber;
+import frc.util.Interpolation.LoggedTunableNumber;
 
 public class Shooter extends SubsystemBase {
     private CommandSwerveDrivetrain drivetrain;
@@ -214,7 +215,7 @@ public class Shooter extends SubsystemBase {
                 position = 5.5;
                 break;
             case HUB_SHOOTING:
-                Translation2d correctedVector = drivetrain.getSOTFTurretAngle("hub");
+                Translation2d correctedVector = drivetrain.getSOTFTurretAngle();
                 double correctedDistance = correctedVector.getNorm();
 
                 motorspeed = ShooterConstants.shooterSpeedInterpolation
@@ -226,7 +227,7 @@ public class Shooter extends SubsystemBase {
                         8);
                 break;
             case PASS_SHOOTING:
-                Translation2d correctedVector2 = drivetrain.getSOTFTurretAngle("pass");
+                Translation2d correctedVector2 = drivetrain.getSOTFTurretAngle();
                 double correctedDistance2 = correctedVector2.getNorm();
 
                 position = MathUtil.clamp(
@@ -287,6 +288,24 @@ public class Shooter extends SubsystemBase {
         } else {
             return false;
         }
+    }
+
+    public void enableEcoModeShooter() {
+        shooterMotor1Config.CurrentLimits.StatorCurrentLimit = 40;
+        shooterMotor1Config.CurrentLimits.SupplyCurrentLimit = 40;
+        shooterMotor1.getConfigurator().apply(shooterMotor1Config);
+        shooterMotor2Config.CurrentLimits.StatorCurrentLimit = 40;
+        shooterMotor2Config.CurrentLimits.SupplyCurrentLimit = 40;
+        shooterMotor2.getConfigurator().apply(shooterMotor2Config);
+    }
+
+    public void disableEcoModeShooter() {
+        shooterMotor1Config.CurrentLimits.StatorCurrentLimit = ShooterConstants.StatorCurrentLimit;
+        shooterMotor1Config.CurrentLimits.SupplyCurrentLimit = ShooterConstants.SupplyCurrentLimit;
+        shooterMotor1.getConfigurator().apply(shooterMotor1Config);
+        shooterMotor2Config.CurrentLimits.StatorCurrentLimit = ShooterConstants.StatorCurrentLimit;
+        shooterMotor2Config.CurrentLimits.SupplyCurrentLimit = ShooterConstants.SupplyCurrentLimit;
+        shooterMotor2.getConfigurator().apply(shooterMotor2Config);
     }
 
     private void logValues() {

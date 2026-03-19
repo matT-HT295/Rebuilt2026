@@ -13,6 +13,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.FeederConstants;
 import frc.robot.Constants.FeederConstants.FeederWantedState;
 import frc.robot.Constants.FeederConstants.SystemState;
+import frc.robot.Constants.IntakeConstants;
 import frc.robot.subsystems.Drive.CommandSwerveDrivetrain;
 import frc.robot.subsystems.Scoring.Shooter;
 import frc.robot.subsystems.Scoring.Turret;
@@ -121,6 +122,24 @@ public class Feeder extends SubsystemBase {
                 towerMotorSpeed = -0.7;
                 break;
         }
+    }
+
+    public void enableEcoModeFeeder() {
+        towerMotorConfig.CurrentLimits.StatorCurrentLimit = 40;
+        towerMotorConfig.CurrentLimits.SupplyCurrentLimit = 40;
+        towerMotor.getConfigurator().apply(towerMotorConfig);
+        spindexerMotorConfig.CurrentLimits.StatorCurrentLimit = 40;
+        spindexerMotorConfig.CurrentLimits.SupplyCurrentLimit = 40;
+        spindexerMotor.getConfigurator().apply(towerMotorConfig);
+    }
+
+    public void disableEcoModeFeeder() {
+        towerMotorConfig.CurrentLimits.StatorCurrentLimit = FeederConstants.StatorCurrentLimit;
+        towerMotorConfig.CurrentLimits.SupplyCurrentLimit = FeederConstants.SupplyCurrentLimit;
+        towerMotor.getConfigurator().apply(towerMotorConfig);
+        spindexerMotorConfig.CurrentLimits.StatorCurrentLimit = FeederConstants.StatorCurrentLimit;
+        spindexerMotorConfig.CurrentLimits.SupplyCurrentLimit = FeederConstants.SupplyCurrentLimit;
+        spindexerMotor.getConfigurator().apply(towerMotorConfig);
     }
 
     /**
