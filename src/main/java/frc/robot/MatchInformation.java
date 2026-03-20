@@ -1,14 +1,15 @@
 package frc.robot;
 
 import java.util.Optional;
+
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.LEDPattern;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.LightsConstants;
-import frc.robot.commands.Lights.WPIlib.SetBlinkingPattern;
 import frc.robot.commands.Lights.WPIlib.ResetLED;
+import frc.robot.commands.Lights.WPIlib.SetBlinkingPattern;
 import frc.robot.subsystems.Lights.LEDSubsystem_WPIlib;
 
 public class MatchInformation extends SubsystemBase {
@@ -47,6 +48,7 @@ public class MatchInformation extends SubsystemBase {
     public boolean redInactiveFirst;
     public boolean shiftWarning_advised;
     public boolean shiftWarning_active;
+    public double internalTeleopTime; // Internal teleop timer used for LED / shift logic
     // private boolean transitionSignalActive;
 
     private enum WarningStage {
@@ -143,6 +145,14 @@ public class MatchInformation extends SubsystemBase {
             teleopStartTimestamp = -1;
             autoStartTimestamp = -1;
         }
+
+        // Internal LED timer (countdown like FMS but based on FPGA time)
+        if (teleopStartTimestamp >= 0) {
+            double teleopElapsed = fpgaTimestamp - teleopStartTimestamp;
+            internalTeleopTime = Math.max(0, 140.0 - teleopElapsed);
+        } else {
+            internalTeleopTime = -1;
+        }
     }
 
     /**
@@ -194,7 +204,7 @@ public class MatchInformation extends SubsystemBase {
      * Update hub and shift logic based on match time and game data. ! Run after
      * updating Driver Station info and timestamps. !
      */
-    public void updateHubLogic() {
+    public void updateHubLogic(double teleopTime) {
 
         teleopShift = 0;
         shiftTimeRemaining = 0;
@@ -212,7 +222,7 @@ public class MatchInformation extends SubsystemBase {
         }
 
         // Not teleop → no hub logic
-        if (!teleop || matchTime < 0) {
+        if (!teleop || teleopTime < 0) {
             hubActive = true;
             return;
         }
@@ -238,19 +248,19 @@ public class MatchInformation extends SubsystemBase {
         };
 
         // Shifts
-        if (matchTime > 130) {
+        if (teleopTime > 130) {
             hubActive = true;
             return;
-        } else if (matchTime > 105) {
+        } else if (teleopTime > 105) {
             teleopShift = 1;
             hubActive = shift1Active;
-        } else if (matchTime > 80) {
+        } else if (teleopTime > 80) {
             teleopShift = 2;
             hubActive = !shift1Active;
-        } else if (matchTime > 55) {
+        } else if (teleopTime > 55) {
             teleopShift = 3;
             hubActive = shift1Active;
-        } else if (matchTime > 30) {
+        } else if (teleopTime > 30) {
             teleopShift = 4;
             hubActive = !shift1Active;
         } else {
@@ -259,7 +269,7 @@ public class MatchInformation extends SubsystemBase {
         }
 
         // Shift timing
-        double cycleElapsed = 130 - matchTime;
+        double cycleElapsed = 130 - teleopTime;
         double intoShift = cycleElapsed % 25.0;
         shiftTimeRemaining = 25.0 - intoShift;
 
@@ -390,7 +400,7 @@ public class MatchInformation extends SubsystemBase {
         updateDriverStation();
         updateTimestamps();
         updatePhase();
-        updateHubLogic();
+        updateHubLogic(internalTeleopTime);
         updateFlags();
         updateShiftWarning();
     }
