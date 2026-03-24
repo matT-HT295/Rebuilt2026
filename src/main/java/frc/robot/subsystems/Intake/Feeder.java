@@ -82,7 +82,11 @@ public class Feeder extends SubsystemBase {
             case INTAKE:
                 yield SystemState.INTAKING;
             case SHOOT:
-                yield SystemState.SHOOTING;
+                if (shooter.shooterIsReady() && turret.turretIsReady()) {
+                    yield SystemState.SHOOTING;
+                } else {
+                    yield SystemState.IDLING;
+                }
             case PASS:
                 yield SystemState.PASSING;
             case FEEDTEST:
@@ -101,13 +105,8 @@ public class Feeder extends SubsystemBase {
                 towerMotorSpeed = 0.0;
                 break;
             case SHOOTING:
-                if (shooter.shooterIsReady() && turret.turretIsReady()) {
-                    spindexerMotorSpeed = FeederConstants.feederShootSpeed;
-                    towerMotorSpeed = FeederConstants.feederShootSpeed;
-                } else {
-                    spindexerMotorSpeed = 0;
-                    towerMotorSpeed = 0;
-                }
+                spindexerMotorSpeed = FeederConstants.feederShootSpeed;
+                towerMotorSpeed = FeederConstants.feederShootSpeed;
                 break;
             case PASSING:
                 if (drivetrain.getPose().getY() > 3.53 && drivetrain.getPose().getY() < 4.53) {

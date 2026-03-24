@@ -1,5 +1,8 @@
 {
   "NetworkTables": {
+    "Persistent Values": {
+      "open": false
+    },
     "transitory": {
       "DriveState": {
         "Pose2d##v_/DriveState/Pose": {
@@ -8,6 +11,12 @@
           },
           "open": true
         }
+      },
+      "LiveWindow": {
+        ".status": {
+          "open": true
+        },
+        "open": true
       },
       "Pose": {
         "double[]##v_/Pose/robotPose": {
@@ -33,6 +42,7 @@
     "types": {
       "/FMSInfo": "FMSInfo",
       "/Pose": "Field2d",
+      "/SmartDashboard/Intake RESET": "Command",
       "/SmartDashboard/Module 0": "Mechanism2d",
       "/SmartDashboard/Module 1": "Mechanism2d",
       "/SmartDashboard/Module 2": "Mechanism2d",
@@ -43,6 +53,11 @@
       "/SmartDashboard/autos": "String Chooser"
     },
     "windows": {
+      "/SmartDashboard/Intake RESET": {
+        "window": {
+          "visible": true
+        }
+      },
       "/SmartDashboard/The field": {
         "Robot": {
           "color": [
@@ -79,7 +94,8 @@
     },
     "Server": {
       "open": true
-    }
+    },
+    "visible": true
   },
   "NetworkTables Settings": {
     "mode": "Client (NT4)",

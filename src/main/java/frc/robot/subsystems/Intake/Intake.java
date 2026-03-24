@@ -27,6 +27,7 @@ public class Intake extends SubsystemBase {
     private TalonFX intakeMotor = new TalonFX(IntakeConstants.intakeMotorID, "rio");
     public TalonFX intakeExtensionMotor = new TalonFX(IntakeConstants.intakeExtensionMotorID, "rio");
     private TalonFXConfiguration intakeMotorConfig = new TalonFXConfiguration();
+    private TalonFXConfiguration intakeExtensionMotorConfig = new TalonFXConfiguration();
     /* SENSOR */
     private CANrange canRange = new CANrange(IntakeConstants.canRangeID, CANBus.roboRIO());
     // for velocity control
@@ -50,26 +51,33 @@ public class Intake extends SubsystemBase {
     /** Creates a new Intake */
     public Intake() {
         /* SETUP CONFIG */
-        intakeMotorConfig.Slot0.kS = k_S.get();
-        intakeMotorConfig.Slot0.kV = k_V.get();
-        intakeMotorConfig.Slot0.kA = k_A.get();
-        intakeMotorConfig.Slot0.kP = k_P.get();
-        intakeMotorConfig.Slot0.kI = k_I.get();
-        intakeMotorConfig.Slot0.kD = k_D.get();
+        intakeExtensionMotorConfig.Slot0.kS = k_S.get();
+        intakeExtensionMotorConfig.Slot0.kV = k_V.get();
+        intakeExtensionMotorConfig.Slot0.kA = k_A.get();
+        intakeExtensionMotorConfig.Slot0.kP = k_P.get();
+        intakeExtensionMotorConfig.Slot0.kI = k_I.get();
+        intakeExtensionMotorConfig.Slot0.kD = k_D.get();
 
         // CURRENT LIMITS
         intakeMotorConfig.CurrentLimits.SupplyCurrentLimit = IntakeConstants.SupplyCurrentLimit;
         intakeMotorConfig.CurrentLimits.StatorCurrentLimit = IntakeConstants.StatorCurrentLimit;
 
+        intakeExtensionMotorConfig.CurrentLimits.SupplyCurrentLimit = IntakeConstants.ExtensionSupplyCurrentLimit;
+        intakeExtensionMotorConfig.CurrentLimits.StatorCurrentLimit = IntakeConstants.ExtensionStatorCurrentLimit;
+
         // Motion MAgic constants
-        intakeMotorConfig.MotionMagic.MotionMagicExpo_kA = IntakeConstants.intakeMotionMagicExpoK_A;
-        intakeMotorConfig.MotionMagic.MotionMagicExpo_kV = IntakeConstants.intakeMotionMagicExpoK_V;
-        intakeMotorConfig.MotionMagic.MotionMagicCruiseVelocity = IntakeConstants.intakeMotionMagicCruiseVel;
+        intakeExtensionMotorConfig.MotionMagic.MotionMagicExpo_kA = IntakeConstants.intakeMotionMagicExpoK_A;
+        intakeExtensionMotorConfig.MotionMagic.MotionMagicExpo_kV = IntakeConstants.intakeMotionMagicExpoK_V;
 
         // APPLY CONFIG TO MOTOR
         StatusCode status = StatusCode.StatusCodeNotInitialized;
         for (int i = 0; i < 5; ++i) {
             status = intakeMotor.getConfigurator().apply(intakeMotorConfig);
+            if (status.isOK())
+                break;
+        }
+        for (int i = 0; i < 5; ++i) {
+            status = intakeExtensionMotor.getConfigurator().apply(intakeExtensionMotorConfig);
             if (status.isOK())
                 break;
         }
@@ -102,34 +110,38 @@ public class Intake extends SubsystemBase {
         return switch (wantedState) {
             case IDLE:
                 if (systemState == SystemState.SCORING) {
-                    intakeMotorConfig.Voltage.PeakReverseVoltage = IntakeConstants.intakeMotionMagicExpoK_A;
-                    intakeExtensionMotor.getConfigurator().apply(intakeMotorConfig);
+                    intakeExtensionMotorConfig.MotionMagic.MotionMagicExpo_kA = IntakeConstants.intakeMotionMagicExpoK_A;
+                    intakeExtensionMotor.getConfigurator().apply(intakeExtensionMotorConfig);
                 }
                 yield SystemState.IDLING;
             case INTAKE:
                 if (systemState == SystemState.SCORING) {
-                    intakeMotorConfig.Voltage.PeakReverseVoltage = IntakeConstants.intakeMotionMagicExpoK_A;
-                    intakeExtensionMotor.getConfigurator().apply(intakeMotorConfig);
+                    intakeExtensionMotorConfig.MotionMagic.MotionMagicExpo_kA = IntakeConstants.intakeMotionMagicExpoK_A;
+                    intakeExtensionMotor.getConfigurator().apply(intakeExtensionMotorConfig);
                 }
+                // if (systemState == SystemState.INTAKING) {
+                // yield SystemState.IDLING;
+                // } else {
                 yield SystemState.INTAKING;
+            // }
             case RETRACT:
                 if (systemState == SystemState.SCORING) {
-                    intakeMotorConfig.Voltage.PeakReverseVoltage = IntakeConstants.intakeMotionMagicExpoK_A;
-                    intakeExtensionMotor.getConfigurator().apply(intakeMotorConfig);
+                    intakeExtensionMotorConfig.MotionMagic.MotionMagicExpo_kA = IntakeConstants.intakeMotionMagicExpoK_A;
+                    intakeExtensionMotor.getConfigurator().apply(intakeExtensionMotorConfig);
                 }
                 yield SystemState.RETRACTING;
             case RESET:
                 if (systemState == SystemState.SCORING) {
-                    intakeMotorConfig.Voltage.PeakReverseVoltage = IntakeConstants.intakeMotionMagicExpoK_A;
-                    intakeExtensionMotor.getConfigurator().apply(intakeMotorConfig);
+                    intakeExtensionMotorConfig.MotionMagic.MotionMagicExpo_kA = IntakeConstants.intakeMotionMagicExpoK_A;
+                    intakeExtensionMotor.getConfigurator().apply(intakeExtensionMotorConfig);
                 }
                 yield SystemState.RESETING;
             case SCORE:
                 yield SystemState.SCORING;
             case OUTTAKE:
                 if (systemState == SystemState.SCORING) {
-                    intakeMotorConfig.Voltage.PeakReverseVoltage = IntakeConstants.intakeMotionMagicExpoK_A;
-                    intakeExtensionMotor.getConfigurator().apply(intakeMotorConfig);
+                    intakeExtensionMotorConfig.MotionMagic.MotionMagicExpo_kA = IntakeConstants.intakeMotionMagicExpoK_A;
+                    intakeExtensionMotor.getConfigurator().apply(intakeExtensionMotorConfig);
                 }
                 yield SystemState.OUTTAKING;
         };
@@ -186,6 +198,17 @@ public class Intake extends SubsystemBase {
         intakeMotor.getConfigurator().apply(intakeMotorConfig);
     }
 
+    public void setZero() {
+        intakeExtensionMotor.setPosition(0);
+    }
+
+    private void canRangeControlledRecalibration() {
+        if (canRange.getDistance().getValueAsDouble() > IntakeConstants.intakeExtensionHomingThreshold
+                && intakeExtensionMotor.getPosition().getValueAsDouble() != 0) {
+            intakeExtensionMotor.setPosition(0);
+        }
+    }
+
     private void LogValues() {
         SmartDashboard.putNumber("Extension Motor Position", intakeExtensionMotor.getPosition().getValueAsDouble());
         // SmartDashboard.putNumber("Intake actual speed", intakeMotor.get());
@@ -197,6 +220,7 @@ public class Intake extends SubsystemBase {
 
     @Override
     public void periodic() {
+        // canRangeControlledRecalibration();
         LogValues();
         systemState = changeCurrentSystemState();
         applyState();

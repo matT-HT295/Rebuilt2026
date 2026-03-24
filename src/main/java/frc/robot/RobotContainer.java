@@ -80,8 +80,7 @@ public class RobotContainer {
     private double MaxAngularRate = RotationsPerSecond.of(0.75).in(RadiansPerSecond); // 3/4 of a rotation per second
                                                                                       // max angular velocity
 
-    // private final SwerveRequest.SwerveDriveBrake brake = new
-    // SwerveRequest.SwerveDriveBrake();
+    private final SwerveRequest.SwerveDriveBrake brake = new SwerveRequest.SwerveDriveBrake();
     // private final SwerveRequest.PointWheelsAt point = new
     // SwerveRequest.PointWheelsAt();
 
@@ -126,6 +125,7 @@ public class RobotContainer {
         configureBindings();
         configureNamedCommands();
         configureAutoCommands();
+        configureTestCommands();
     }
 
     /**
@@ -149,14 +149,16 @@ public class RobotContainer {
         drivetrain.setDefaultCommand(
                 // Drivetrain will execute this command periodically
                 drivetrain.applyRequest(() -> {
-                    double slowFactor = operator.rightTrigger().getAsBoolean() ? .5 : 1.0;
+                    double slowFactor = operator.rightTrigger().getAsBoolean() ? .2 : 1.0;
+                    double slowRotFactor = operator.rightTrigger().getAsBoolean() ? .1 : 1.0;
+
                     return drive.withVelocityX(-driver.getLeftY() * MaxSpeed * slowFactor) // Drive forward with
                                                                                            // negative Y (forward)
                             .withVelocityY(-driver.getLeftX() * MaxSpeed * slowFactor) // Drive left with negative X
                                                                                        // (left)
-                            .withRotationalRate(-driver.getRightX() * MaxAngularRate * slowFactor); // Drive
-                                                                                                    // counterclockwise
-                                                                                                    // with
+                            .withRotationalRate(-driver.getRightX() * MaxAngularRate * slowRotFactor); // Drive
+                                                                                                       // counterclockwise
+                                                                                                       // with
                     // negative X (left)
                 }));
         // gyro reset
@@ -189,8 +191,9 @@ public class RobotContainer {
 
         // intake
         driver.rightBumper()
-                .onTrue(new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.INTAKE)))
-                .onFalse(new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.IDLE)));
+                .onTrue(new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.INTAKE)));
+        // .onFalse(new InstantCommand(() ->
+        // intake.setWantedIntakeState(IntakeWantedState.IDLE)));
 
         // retract
         driver.leftBumper()
@@ -213,8 +216,8 @@ public class RobotContainer {
                                 new InstantCommand(() -> intake.disableEcoModeIntake()),
                                 new InstantCommand(() -> turret.disableEcoModeTurret()),
                                 new InstantCommand(() -> feeder.disableEcoModeFeeder())));
-        // Brake
-        // driver.a().whileTrue(drivetrain.applyRequest(() -> brake));
+        // brake
+        driver.rightTrigger().whileTrue(drivetrain.applyRequest(() -> brake));
         // driver.b().whileTrue(drivetrain.applyRequest(() ->
         // point.withModuleDirection(new Rotation2d(-driver.getLeftY(),
         // -driver.getLeftX()))
@@ -332,6 +335,10 @@ public class RobotContainer {
         // new DisableLED(normalLights).schedule();
     }
 
+    public void configureTestCommands() {
+        SmartDashboard.putData("Intake RESET", new InstantCommand(() -> intake.setZero()));
+    }
+
     /**
      * Use this to pass the autonomous command to the main {@link Robot} class.
      *
@@ -372,7 +379,6 @@ public class RobotContainer {
                 new SequentialCommandGroup(
                         new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.TRENCH_SHOOT)),
                         new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.TRENCH_PRESETL)),
-                        waitToShoot(),
                         new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.SHOOT)),
                         wait(1.5),
                         new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.RETRACT)))
@@ -382,7 +388,6 @@ public class RobotContainer {
                 new SequentialCommandGroup(
                         new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.TRENCH_SHOOT)),
                         new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.TRENCH_PRESETR)),
-                        waitToShoot(),
                         new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.SHOOT)),
                         wait(1.5),
                         new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.RETRACT)))

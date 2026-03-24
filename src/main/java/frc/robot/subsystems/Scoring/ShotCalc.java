@@ -6,6 +6,7 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import frc.robot.Constants.ShooterConstants;
 
+// option 3
 public final class ShotCalc {
 
     public static record ShooterCommand(double RPS, Rotation2d turretAngle, double hoodAngle) {
@@ -32,9 +33,13 @@ public final class ShotCalc {
         Translation2d targetDirection = toGoal.div(distance);
 
         // 3. Lookup baseline values from tables
-        double baselineTOF = ShooterConstants.TOF_MAP.get(distance);
-        double baselineRPS = ShooterConstants.RPS_MAP.get(distance);
-        double baselineHoodAngle = ShooterConstants.HOOD_MAP.get(distance);
+        // double baselineTOF = ShooterConstants.TOF_MAP.get(distance);
+        // double baselineRPS = ShooterConstants.RPS_MAP.get(distance);
+        // double baselineHoodAngle = ShooterConstants.HOOD_MAP.get(distance);
+
+        double baselineTOF = ShooterConstants.timeOfFlightInterpolation.getPrediction(distance);
+        double baselineRPS = ShooterConstants.shooterSpeedInterpolation.getPrediction(distance);
+        double baselineHoodAngle = ShooterConstants.hoodAngleInterpolation.getPrediction(distance);
 
         double baselineVelocity = distance / baselineTOF;
 

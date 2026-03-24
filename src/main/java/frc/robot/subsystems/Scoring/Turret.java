@@ -244,19 +244,25 @@ public class Turret extends SubsystemBase {
                 double currentTurretToRobotAngle2 = turretMotor.getPosition().getValueAsDouble();
                 // calculate robot angle relative to field
                 Rotation2d currentRobotAngle2 = drivetrain.getPose().getRotation();
-                Rotation2d angleToHub2 = drivetrain.getSOTFTurretAngle().getAngle();
+                // Rotation2d angleToHub2 = drivetrain.getSOTFTurretAngle().getAngle();
+
+                /* OPTION 1 */
+                // Rotation2d angleToHub2 = drivetrain.SOTF_CALC().getAngle();
 
                 /* OPTION 2 */
-                // angleToHub = drivetrain.SOTF_CALC().getAngle()
+                // Rotation2d angleToHub2 = Rotation2d.fromDegrees(drivetrain.SOTFcalc()[0]);
 
                 /* OPTION 3 */
-                // ChassisSpeeds rawFieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
-                // drivetrain.getState().Speeds,
-                // drivetrain.getPose().getRotation());
-                // Rotation2d angleToHub2 = Rotation2d.fromDegrees(ShotCalc.calculateSOTF(
-                // drivetrain.getTurretPose().getTranslation(),
-                // rawFieldSpeeds, drivetrain.getScoringLocation(),
-                // ShooterConstants.latencyCompensation).turretAngle());
+                ChassisSpeeds rawFieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
+                        drivetrain.getState().Speeds,
+                        drivetrain.getPose().getRotation());
+                Rotation2d angleToHub2 = (ShotCalc.calculateSOTF(
+                        drivetrain.getTurretPose().getTranslation(),
+                        rawFieldSpeeds, drivetrain.getScoringLocation(),
+                        ShooterConstants.latencyCompensation).turretAngle());
+
+                /* OPTION 4 */
+                // Rotation2d angleToHub2 = ShotCalc2.calculateSOTF(drivetrain).turretAngle();
 
                 // calculate desired angle of turret relative to hub
                 // double angleToHub2 = (Math.atan2(drivetrain.getYfromHub(),
@@ -305,7 +311,7 @@ public class Turret extends SubsystemBase {
     }
 
     public boolean turretIsReady() {
-        if ((turretMotor.getPosition().getValueAsDouble() - position) < TurretConstants.tolerance) {
+        if (Math.abs(turretMotor.getPosition().getValueAsDouble() - position) < TurretConstants.tolerance) {
             return true;
         } else {
             return false;
