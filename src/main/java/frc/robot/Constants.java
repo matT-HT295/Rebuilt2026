@@ -65,21 +65,22 @@ public final class Constants {
 
     public static class ShooterConstants {
         public static double hoodConversionRotToDeg = 360 / 129.6;
-        public static double latencyCompensation = .15;
+        public static double latencyCompensation = .20;
         public static double MIN_RPS = 0;
         public static double MAX_RPS = 100;
 
         public static final InterpolatingDoubleTreeMap RPS_MAP = new InterpolatingDoubleTreeMap();
         static {
-            RPS_MAP.put(2.0, 0d);
-            RPS_MAP.put(2.5, 0d);
-            RPS_MAP.put(3.0, 0d);
-            RPS_MAP.put(3.5, 0d);
-            RPS_MAP.put(4.0, 0d);
-            RPS_MAP.put(4.5, 0d);
-            RPS_MAP.put(5.0, 0d);
-            RPS_MAP.put(5.5, 0d);
-            RPS_MAP.put(6.0, 0d);
+            RPS_MAP.put(2.0, 47);
+           // RPS_MAP.put(2.5, 0d);
+            RPS_MAP.put(3.0, 50);
+            //RPS_MAP.put(3.5, 0d);
+            RPS_MAP.put(4.0, 52);
+            //RPS_MAP.put(4.5, 0d);
+            RPS_MAP.put(5.0, 55);
+            //RPS_MAP.put(5.5, 0d);
+            RPS_MAP.put(6.0, 62);
+            RPS_MAP.put(10.0, 85);
         };
 
         public static final InterpolatingDoubleTreeMap REVERSE_RPM_MAP = new InterpolatingDoubleTreeMap();
@@ -98,27 +99,29 @@ public final class Constants {
         public static final InterpolatingDoubleTreeMap HOOD_MAP = new InterpolatingDoubleTreeMap();
         static {
             HOOD_MAP.put(2.0, 0d);
-            HOOD_MAP.put(2.5, 0d);
-            HOOD_MAP.put(3.0, 0d);
-            HOOD_MAP.put(3.5, 0d);
-            HOOD_MAP.put(4.0, 0d);
-            HOOD_MAP.put(4.5, 0d);
-            HOOD_MAP.put(5.0, 0d);
-            HOOD_MAP.put(5.5, 0d);
-            HOOD_MAP.put(6.0, 0d);
+           // HOOD_MAP.put(2.5, 0d);
+            HOOD_MAP.put(3.0, 2.5d);
+            //HOOD_MAP.put(3.5, 0d);
+            HOOD_MAP.put(4.0, 5d);
+            //HOOD_MAP.put(4.5, 0d);
+            HOOD_MAP.put(5.0, 5.5d);
+            //HOOD_MAP.put(5.5, 0d);
+            HOOD_MAP.put(6.0, 6.5d);
+            HOOD_MAP.put(10.0, 8d);
         };
 
         public static final InterpolatingDoubleTreeMap TOF_MAP = new InterpolatingDoubleTreeMap();
         static {
-            TOF_MAP.put(2.0, 0d);
-            TOF_MAP.put(2.5, 0d);
-            TOF_MAP.put(3.0, 0d);
-            TOF_MAP.put(3.5, 0d);
-            TOF_MAP.put(4.0, 0d);
-            TOF_MAP.put(4.5, 0d);
-            TOF_MAP.put(5.0, 0d);
-            TOF_MAP.put(5.5, 0d);
-            TOF_MAP.put(6.0, 0d);
+            TOF_MAP.put(2.0, 0.975);
+            //TOF_MAP.put(2.5, 0d);
+            TOF_MAP.put(3.0, 1.125);
+            //TOF_MAP.put(3.5, 0d);
+            TOF_MAP.put(4.0, 1.175);
+           // TOF_MAP.put(4.5, 0d);
+            TOF_MAP.put(5.0, 1.225);
+           // TOF_MAP.put(5.5, 0d);
+            TOF_MAP.put(6.0, 1.27);
+            TOF_MAP.put(10.0, 1.47);
         };
 
         public static double activeWaitingSpeed = 30;

@@ -11,52 +11,88 @@ public final class ShotCalc {
     public static record ShooterCommand(double RPS, Rotation2d turretAngle, double hoodAngle) {
     }
 
+    // Low-pass filter state — persists between calls
+    private static ChassisSpeeds filteredSpeeds = new ChassisSpeeds();
+
     public static ShooterCommand calculateSOTF(
             Translation2d robotPosition,
-            ChassisSpeeds chassisSpeeds,
-            Translation2d goalPosition,
-            double latencyCompensation) {
+            Translation2d turretPosition,
+            ChassisSpeeds rawFieldSpeeds,
+            double omega,
+            Translation2d goalPosition) {
 
-        // 1. Predict future robot position
-        Translation2d robotVelocity = new Translation2d(chassisSpeeds.vxMetersPerSecond,
-                chassisSpeeds.vyMetersPerSecond);
-        Translation2d futurePos = robotPosition.plus(robotVelocity.times(latencyCompensation));
+        // 1. LOW-PASS FILTER on translational velocity
+        double alpha = 0.15;
+        filteredSpeeds.vxMetersPerSecond = alpha * rawFieldSpeeds.vxMetersPerSecond
+                + (1 - alpha) * filteredSpeeds.vxMetersPerSecond;
+        filteredSpeeds.vyMetersPerSecond = alpha * rawFieldSpeeds.vyMetersPerSecond
+                + (1 - alpha) * filteredSpeeds.vyMetersPerSecond;
+        filteredSpeeds.omegaRadiansPerSecond = omega; // no filter on omega
 
-        // 2. Target vector & distance
-        Translation2d toGoal = goalPosition.minus(futurePos);
+        // 2. ROTATIONAL VELOCITY CORRECTION
+        // Velocity contribution at the turret due to robot spinning
+        Translation2d turretOffset = turretPosition.minus(robotPosition);
+        Translation2d rotationalVelocity = new Translation2d(
+                -omega * turretOffset.getY(),
+                omega * turretOffset.getX());
+
+        // 3. TOTAL VELOCITY at turret (translational + rotational)
+        Translation2d totalVelocity = new Translation2d(
+                filteredSpeeds.vxMetersPerSecond,
+                filteredSpeeds.vyMetersPerSecond).plus(rotationalVelocity);
+
+        // 4. NULL SAFETY — too close to target
+        Translation2d toGoal = goalPosition.minus(turretPosition);
         double distance = toGoal.getNorm();
-        if (distance < 1e-6) {
-            // Too close, return safe defaults
+        if (distance < 0.5) // If we're within 0.5m of the goal, SOTF isn't reliable
             return new ShooterCommand(0, new Rotation2d(), 0);
         }
-        Translation2d targetDirection = toGoal.div(distance);
 
-        // 3. Lookup baseline values from tables
-        double baselineTOF = ShooterConstants.TOF_MAP.get(distance);
+        // 5. INITIAL TABLE LOOKUPS at real distance
+        double timeOfFlight = ShooterConstants.TOF_MAP.get(distance);
+        Translation2d virtualTarget = goalPosition;
+
+        // 6. ITERATIVE SOLVE (2 passes)
+        // Resolves circular dependency: distance -> TOF -> corrected aim -> new distance
+        for (int i = 0; i < 2; i++) {
+            // Where will the turret be when the ball arrives
+            Translation2d predictedTurretPos = turretPosition.plus(totalVelocity.times(timeOfFlight));
+
+            // Where should we aim so the ball meets the goal after robot moves
+            virtualTarget = goalPosition.minus(totalVelocity.times(timeOfFlight));
+
+            // Recalculate distance and TOF based on corrected geometry
+            toGoal = virtualTarget.minus(predictedTurretPos);
+            distance = toGoal.getNorm();
+            timeOfFlight = ShooterConstants.TOF_MAP.get(distance);
+        }
+
+        // 7. FINAL TABLE LOOKUPS at corrected distance
         double baselineRPS = ShooterConstants.RPS_MAP.get(distance);
         double baselineHoodAngle = ShooterConstants.HOOD_MAP.get(distance);
+        double baselineVelocity = distance / timeOfFlight;
 
-        double baselineVelocity = distance / baselineTOF;
+        // 8. VECTOR SUBTRACTION FOR AIM
+        // Desired shot velocity toward virtual target, minus robot velocity
+        Translation2d correctedVector = virtualTarget.minus(turretPosition);
+        double correctedDist = correctedVector.getNorm();
+        Translation2d targetVelocity = correctedVector.div(correctedDist).times(baselineVelocity);
+        Translation2d shotVelocity = targetVelocity.minus(totalVelocity);
 
-        // 4. Desired shot velocity vector
-        Translation2d targetVelocity = targetDirection.times(baselineVelocity);
-
-        // 5. Compensate for robot motion
-        Translation2d shotVelocity = targetVelocity.minus(robotVelocity);
-
-        // 6. Turret angle points along shot vector
+        // 9. TURRET ANGLE
         Rotation2d turretAngle = shotVelocity.getAngle();
+
+        // 10. SCALE RPS PROPORTIONALLY (from this class's original approach)
+        // Avoids unit conversion — stays in RPS space entirely
         double requiredVelocity = shotVelocity.getNorm();
-
-        // 7. Scale RPS proportionally to velocity change
         double velocityRatio = requiredVelocity / baselineVelocity;
-        double adjustedRPS = baselineRPS * velocityRatio;
-        adjustedRPS = MathUtil.clamp(adjustedRPS, ShooterConstants.MIN_RPS, ShooterConstants.MAX_RPS);
+        double adjustedRPS = MathUtil.clamp(
+                baselineRPS * velocityRatio,
+                ShooterConstants.MIN_RPS,
+                ShooterConstants.MAX_RPS);
 
-        // 8. Adjust hood slightly to maintain trajectory (optional small correction)
-        // Keep hood mostly from baseline, small adjustment for horizontal component
-        double adjustedHood = baselineHoodAngle; // can refine if needed
+        // 11. HOOD ANGLE — baseline from table, can refine if needed
+        double adjustedHood = baselineHoodAngle;
 
         return new ShooterCommand(adjustedRPS, turretAngle, adjustedHood);
     }
-}

@@ -215,29 +215,13 @@ public class Shooter extends SubsystemBase {
                 position = 5.5;
                 break;
             case HUB_SHOOTING:
-                Translation2d correctedVector = drivetrain.getSOTFTurretAngle();
-                double correctedDistance = correctedVector.getNorm();
-
-                motorspeed = ShooterConstants.shooterSpeedInterpolation
-                        .getPrediction(correctedDistance);
-
-                position = MathUtil.clamp(
-                        ShooterConstants.hoodAngleInterpolation.getPrediction(correctedDistance),
-                        -0.5,
-                        8);
-                break;
+    motorspeed = currentShotCommand.RPS();
+    position = MathUtil.clamp(currentShotCommand.hoodAngle(), -0.5, 8);
+    break;
             case PASS_SHOOTING:
-                Translation2d correctedVector2 = drivetrain.getSOTFTurretAngle();
-                double correctedDistance2 = correctedVector2.getNorm();
-
-                position = MathUtil.clamp(
-                        ShooterConstants.hoodAngleInterpolation.getPrediction(correctedDistance2),
-                        -.5,
-                        8);
-
-                motorspeed = ShooterConstants.shooterSpeedInterpolation
-                        .getPrediction(correctedDistance2);
-                break;
+                motorspeed = currentShotCommand.RPS();
+    position = MathUtil.clamp(currentShotCommand.hoodAngle(), -0.5, 8);
+    break;
             case HOMING:
                 position = -.1;
                 if (hoodMotor.getSupplyCurrent().getValueAsDouble() >= ShooterConstants.homingThreshold) {

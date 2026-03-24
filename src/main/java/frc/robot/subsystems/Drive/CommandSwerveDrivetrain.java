@@ -36,6 +36,7 @@ import frc.robot.Constants.ShooterConstants;
 import frc.robot.Constants.VisionConstants;
 import frc.robot.Constants.FieldConstants.ScoringZone;
 import frc.robot.subsystems.Drive.TunerConstants.TunerSwerveDrivetrain;
+import frc.robot.subsystems.Scoring.ShotCalc; // ADDED
 
 /**
  * Class that extends the Phoenix 6 SwerveDrivetrain class and implements
@@ -123,166 +124,170 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
     private ChassisSpeeds filteredFieldSpeeds = new ChassisSpeeds(0, 0, 0);
 
-    public Translation2d getSOTFTurretAngle() {
+    // ADDED: Cached SOTF calculation — updated every loop in periodic()
+    public ShotCalc.ShooterCommand currentShotCommand =
+        new ShotCalc.ShooterCommand(0, new Rotation2d(), 0);
 
-        // Current turret pose
-        Pose2d turretPose = getCurrentTurretPose();
+    // public Translation2d getSOTFTurretAngle() {
 
-        // Hub position
-        Translation2d aimingTarget = getScoringLocation();
+    //     // Current turret pose
+    //     Pose2d turretPose = getCurrentTurretPose();
 
-        // Vector from turret to hub
-        Translation2d toTarget = aimingTarget.minus(turretPose.getTranslation());
+    //     // Hub position
+    //     Translation2d aimingTarget = getScoringLocation();
 
-        double distance = toTarget.getNorm();
+    //     // Vector from turret to hub
+    //     Translation2d toTarget = aimingTarget.minus(turretPose.getTranslation());
 
-        // Time of flight from your interpolation table
-        double timeOfFlight = ShooterConstants.timeOfFlightInterpolation
-                .getPrediction(distance);
+    //     double distance = toTarget.getNorm();
 
-        // Convert robot speeds to field relative
-        // ChassisSpeeds fieldSpeeds =
-        // ChassisSpeeds.fromRobotRelativeSpeeds(
-        // getState().Speeds,
-        // getPose().getRotation()
-        // );
-        // Convert robot speeds to field relative
-        ChassisSpeeds rawFieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
-                getState().Speeds,
-                getPose().getRotation());
+    //     // Time of flight from your interpolation table
+    //     double timeOfFlight = ShooterConstants.timeOfFlightInterpolation
+    //             .getPrediction(distance);
 
-        // Low-pass filter (smooth velocity)
-        double alpha = 0.15; // smaller = smoother (0.1–0.2 usually good)
+    //     // Convert robot speeds to field relative
+    //     // ChassisSpeeds fieldSpeeds =
+    //     // ChassisSpeeds.fromRobotRelativeSpeeds(
+    //     // getState().Speeds,
+    //     // getPose().getRotation()
+    //     // );
+    //     // Convert robot speeds to field relative
+    //     ChassisSpeeds rawFieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
+    //             getState().Speeds,
+    //             getPose().getRotation());
 
-        filteredFieldSpeeds.vxMetersPerSecond = alpha * rawFieldSpeeds.vxMetersPerSecond +
-                (1 - alpha) * filteredFieldSpeeds.vxMetersPerSecond;
+    //     // Low-pass filter (smooth velocity)
+    //     double alpha = 0.15; // smaller = smoother (0.1–0.2 usually good)
 
-        filteredFieldSpeeds.vyMetersPerSecond = alpha * rawFieldSpeeds.vyMetersPerSecond +
-                (1 - alpha) * filteredFieldSpeeds.vyMetersPerSecond;
+    //     filteredFieldSpeeds.vxMetersPerSecond = alpha * rawFieldSpeeds.vxMetersPerSecond +
+    //             (1 - alpha) * filteredFieldSpeeds.vxMetersPerSecond;
 
-        filteredFieldSpeeds.omegaRadiansPerSecond = rawFieldSpeeds.omegaRadiansPerSecond;
-        // Robot translational velocity
-        Translation2d robotVelocity = new Translation2d(
-                filteredFieldSpeeds.vxMetersPerSecond,
-                filteredFieldSpeeds.vyMetersPerSecond);
+    //     filteredFieldSpeeds.vyMetersPerSecond = alpha * rawFieldSpeeds.vyMetersPerSecond +
+    //             (1 - alpha) * filteredFieldSpeeds.vyMetersPerSecond;
 
-        // --- TRANSLATIONAL SOTF CORRECTION ---
+    //     filteredFieldSpeeds.omegaRadiansPerSecond = rawFieldSpeeds.omegaRadiansPerSecond;
+    //     // Robot translational velocity
+    //     Translation2d robotVelocity = new Translation2d(
+    //             filteredFieldSpeeds.vxMetersPerSecond,
+    //             filteredFieldSpeeds.vyMetersPerSecond);
 
-        Translation2d translationalCorrection = robotVelocity.times(timeOfFlight);
+    //     // --- TRANSLATIONAL SOTF CORRECTION ---
 
-        // --- ROTATIONAL SOTF CORRECTION ---
+    //     Translation2d translationalCorrection = robotVelocity.times(timeOfFlight);
 
-        double omega = filteredFieldSpeeds.omegaRadiansPerSecond;
+    //     // --- ROTATIONAL SOTF CORRECTION ---
 
-        Translation2d turretOffset = turretPose.getTranslation().minus(getPose().getTranslation());
+    //     double omega = filteredFieldSpeeds.omegaRadiansPerSecond;
 
-        Translation2d rotationalVelocity = new Translation2d(
-                -omega * turretOffset.getY(),
-                omega * turretOffset.getX());
+    //     Translation2d turretOffset = turretPose.getTranslation().minus(getPose().getTranslation());
 
-        Translation2d rotationalCorrection = rotationalVelocity.times(timeOfFlight);
+    //     Translation2d rotationalVelocity = new Translation2d(
+    //             -omega * turretOffset.getY(),
+    //             omega * turretOffset.getX());
 
-        // --- COMBINED CORRECTION ---
+    //     Translation2d rotationalCorrection = rotationalVelocity.times(timeOfFlight);
 
-        Translation2d correctedVector = toTarget
-                .minus(translationalCorrection)
-                .minus(rotationalCorrection);
+    //     // --- COMBINED CORRECTION ---
 
-        // Final turret aim angle
-        Rotation2d aimAngle = correctedVector.getAngle();
+    //     Translation2d correctedVector = toTarget
+    //             .minus(translationalCorrection)
+    //             .minus(rotationalCorrection);
 
-        // Debug visualization
-        TheField.getObject("turret pose")
-                .setPose(turretPose);
+    //     // Final turret aim angle
+    //     Rotation2d aimAngle = correctedVector.getAngle();
 
-        TheField.getObject("corrected shot vector")
-                .setPose(
-                        new Pose2d(
-                                turretPose.getTranslation().plus(correctedVector),
-                                aimAngle));
+    //     // Debug visualization
+    //     TheField.getObject("turret pose")
+    //             .setPose(turretPose);
 
-        return correctedVector;
-    }
+    //     TheField.getObject("corrected shot vector")
+    //             .setPose(
+    //                     new Pose2d(
+    //                             turretPose.getTranslation().plus(correctedVector),
+    //                             aimAngle));
 
-    // solution 1.5
-    public Translation2d SOTF_CALC() {
+    //     return correctedVector;
+    // }
 
-        Pose2d turretPose = getCurrentTurretPose();
+    // // solution 1.5
+    // public Translation2d SOTF_CALC() {
 
-        Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
+    //     Pose2d turretPose = getCurrentTurretPose();
 
-        Translation2d realTarget = getScoringLocation();
-        // alliance == Alliance.Red
-        // ? VisionConstants.RED_HUB_POSE
-        // : VisionConstants.BLUE_HUB_POSE;
+    //     Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
 
-        Translation2d turretPos = turretPose.getTranslation();
+    //     Translation2d realTarget = getScoringLocation();
+    //     // alliance == Alliance.Red
+    //     // ? VisionConstants.RED_HUB_POSE
+    //     // : VisionConstants.BLUE_HUB_POSE;
 
-        // Convert robot velocity to field frame
-        ChassisSpeeds fieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
-                getState().Speeds,
-                getPose().getRotation());
+    //     Translation2d turretPos = turretPose.getTranslation();
 
-        Translation2d robotVelocity = new Translation2d(
-                fieldSpeeds.vxMetersPerSecond,
-                fieldSpeeds.vyMetersPerSecond);
+    //     // Convert robot velocity to field frame
+    //     ChassisSpeeds fieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
+    //             getState().Speeds,
+    //             getPose().getRotation());
 
-        double omega = fieldSpeeds.omegaRadiansPerSecond;
+    //     Translation2d robotVelocity = new Translation2d(
+    //             fieldSpeeds.vxMetersPerSecond,
+    //             fieldSpeeds.vyMetersPerSecond);
 
-        // turret offset from robot center
-        Translation2d turretOffset = VisionConstants.turretToCenter.getTranslation();
+    //     double omega = fieldSpeeds.omegaRadiansPerSecond;
 
-        // rotational velocity of turret
-        Translation2d rotationalVelocity = new Translation2d(
-                -omega * turretOffset.getY(),
-                omega * turretOffset.getX());
+    //     // turret offset from robot center
+    //     Translation2d turretOffset = VisionConstants.turretToCenter.getTranslation();
 
-        Translation2d totalRobotVelocity = robotVelocity.plus(rotationalVelocity);
+    //     // rotational velocity of turret
+    //     Translation2d rotationalVelocity = new Translation2d(
+    //             -omega * turretOffset.getY(),
+    //             omega * turretOffset.getX());
 
-        Translation2d virtualTarget = realTarget;
+    //     Translation2d totalRobotVelocity = robotVelocity.plus(rotationalVelocity);
 
-        Translation2d toTarget = virtualTarget.minus(getCurrentTurretPose().getTranslation());
+    //     Translation2d virtualTarget = realTarget;
 
-        double distance = toTarget.getNorm();
+    //     Translation2d toTarget = virtualTarget.minus(getCurrentTurretPose().getTranslation());
 
-        double timeOfFlight = ShooterConstants.timeOfFlightInterpolation
-                .getPrediction(distance);
+    //     double distance = toTarget.getNorm();
 
-        // ITERATIVE SOLVE (2 passes)
-        for (int i = 0; i < 2; i++) {
+    //     double timeOfFlight = ShooterConstants.timeOfFlightInterpolation
+    //             .getPrediction(distance);
 
-            Translation2d predictedTurretPos = turretPos.plus(totalRobotVelocity.times(timeOfFlight));
+    //     // ITERATIVE SOLVE (2 passes)
+    //     for (int i = 0; i < 2; i++) {
 
-            toTarget = virtualTarget.minus(predictedTurretPos);
+    //         Translation2d predictedTurretPos = turretPos.plus(totalRobotVelocity.times(timeOfFlight));
 
-            distance = toTarget.getNorm();
+    //         toTarget = virtualTarget.minus(predictedTurretPos);
 
-            timeOfFlight = ShooterConstants.timeOfFlightInterpolation
-                    .getPrediction(distance);
+    //         distance = toTarget.getNorm();
 
-            virtualTarget = realTarget.minus(
-                    totalRobotVelocity.times(timeOfFlight));
-        }
+    //         timeOfFlight = ShooterConstants.timeOfFlightInterpolation
+    //                 .getPrediction(distance);
 
-        Translation2d correctedVector = virtualTarget.minus(turretPos);
+    //         virtualTarget = realTarget.minus(
+    //                 totalRobotVelocity.times(timeOfFlight));
+    //     }
 
-        Rotation2d turretAngle = correctedVector.getAngle()
-                .minus(getPose().getRotation());
+    //     Translation2d correctedVector = virtualTarget.minus(turretPos);
 
-        return correctedVector;
-    }
+    //     Rotation2d turretAngle = correctedVector.getAngle()
+    //             .minus(getPose().getRotation());
 
-    public Pose2d getCurrentTurretPose() {
-        Pose2d turretPose = getPose().transformBy(VisionConstants.turretToCenter);
-        turretPose = turretPose.rotateAround(turretPose.getTranslation(), Rotation2d.k180deg);
-        return turretPose;
-    }
+    //     return correctedVector;
+    // }
 
-    public Translation2d getHub() {
-        Translation2d goalLocation = DriverStation.getAlliance().get() == Alliance.Red ? FieldConstants.RED_HUB_POSE
-                : FieldConstants.BLUE_HUB_POSE;
-        return goalLocation;
-    }
+    // public Pose2d getCurrentTurretPose() {
+    //     Pose2d turretPose = getPose().transformBy(VisionConstants.turretToCenter);
+    //     turretPose = turretPose.rotateAround(turretPose.getTranslation(), Rotation2d.k180deg);
+    //     return turretPose;
+    // }
+
+    // public Translation2d getHub() {
+    //     Translation2d goalLocation = DriverStation.getAlliance().get() == Alliance.Red ? FieldConstants.RED_HUB_POSE
+    //             : FieldConstants.BLUE_HUB_POSE;
+    //     return goalLocation;
+    // }
 
     // SOTF Solution 2
     // public double[] SOTFcalc() {
@@ -669,6 +674,20 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
     @Override
     public void periodic() {
+        // ADDED: Update SOTF calculation once per loop — read by Turret and Shooter subsystems
+        if (DriverStation.getAlliance().isPresent()) {
+            ChassisSpeeds rawFieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
+                    getState().Speeds,
+                    getPose().getRotation());
+
+            currentShotCommand = ShotCalc.calculateSOTF(
+                    getPose().getTranslation(),
+                    getCurrentTurretPose().getTranslation(),
+                    rawFieldSpeeds,
+                    getState().Speeds.omegaRadiansPerSecond,
+                    getScoringLocation());
+        }
+
         // vision.updateVision(this);
         TheField.getObject("robot").setPose(getPose());
         // if (vision.getEstimatedGlobalPose1().isPresent()) {

@@ -205,90 +205,112 @@ public class Turret extends SubsystemBase {
                 // leds.LED_ScrollPatternRelative(LEDPattern.gradient(GradientType.kContinuous,
                 // Color.kOrange, Color.kYellow), 2.5);
                 double currentTurretToRobotAngle = turretMotor.getPosition().getValueAsDouble();
-                // calculate robot angle relative to field
-                Rotation2d currentRobotAngle = drivetrain.getPose().getRotation();
-                Rotation2d angleToHub = drivetrain.getSOTFTurretAngle().getAngle();
+    Rotation2d currentRobotAngle = drivetrain.getPose().getRotation();
 
-                // calculate desired angle of turret relative to hub
-                // double angleToHub = (Math.atan2(passSpot.getY(), passSpot.getX()));
-
-                // calculate desired angle of turret relative to robot
-                Rotation2d desiredTurretAngle = (angleToHub)
-                        .minus(currentRobotAngle)
-                        .plus(Rotation2d.fromDegrees(180));
-                // convert to rotations
-                double convertedTurretAngle = desiredTurretAngle.getDegrees() / 360;
-
-                // compute shortest delta between branches
-                double delta = convertedTurretAngle - (currentTurretToRobotAngle);
-                delta = Math.IEEEremainder(delta, 1.0);
-
-                // now apply
-                target = currentTurretToRobotAngle + delta;
-
-                // now enforce mechanical limits with wrap only if truly needed
-                while (target > CCWlimit)
-                    target -= 1.0;
-                while (target < CWLimit)
-                    target += 1.0;
-
-                // probe
-                SmartDashboard.putNumber("Turret Setpoint with adjustment", target);
-
-                position = target;
-                break;
+    Rotation2d angleToHub = currentShotCommand.turretAngle();
+    
+    Rotation2d desiredTurretAngle = (angleToHub)
+            .minus(currentRobotAngle)
+            .plus(Rotation2d.fromDegrees(180));
+    double convertedTurretAngle = desiredTurretAngle.getDegrees() / 360;
+    double delta = convertedTurretAngle - (currentTurretToRobotAngle);
+    delta = Math.IEEEremainder(delta, 1.0);
+    target = currentTurretToRobotAngle + delta;
+    while (target > CCWlimit)
+        target -= 1.0;
+    while (target < CWLimit)
+        target += 1.0;
+    target += offset;
+    position = target;
+    break;
             case HUB_AIMING:
-                double target2 = 0;
-                // leds.LED_ScrollPatternRelative(LEDPattern.gradient(GradientType.kContinuous,
-                // Color.kCadetBlue, Color.kLightGreen), 2.5);
-                double currentTurretToRobotAngle2 = turretMotor.getPosition().getValueAsDouble();
-                // calculate robot angle relative to field
-                Rotation2d currentRobotAngle2 = drivetrain.getPose().getRotation();
-                Rotation2d angleToHub2 = drivetrain.getSOTFTurretAngle().getAngle();
+                // double target2 = 0;
+                // // leds.LED_ScrollPatternRelative(LEDPattern.gradient(GradientType.kContinuous,
+                // // Color.kCadetBlue, Color.kLightGreen), 2.5);
+                // double currentTurretToRobotAngle2 = turretMotor.getPosition().getValueAsDouble();
+                // // calculate robot angle relative to field
+                // Rotation2d currentRobotAngle2 = drivetrain.getPose().getRotation();
+                // Rotation2d angleToHub2 = drivetrain.getSOTFTurretAngle().getAngle();
 
-                /* OPTION 2 */
-                // angleToHub = drivetrain.SOTF_CALC().getAngle()
+                // /* OPTION 2 */
+                // // angleToHub = drivetrain.SOTF_CALC().getAngle()
 
-                /* OPTION 3 */
-                // ChassisSpeeds rawFieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
-                // drivetrain.getState().Speeds,
-                // drivetrain.getPose().getRotation());
-                // Rotation2d angleToHub2 = Rotation2d.fromDegrees(ShotCalc.calculateSOTF(
-                // drivetrain.getTurretPose().getTranslation(),
-                // rawFieldSpeeds, drivetrain.getScoringLocation(),
-                // ShooterConstants.latencyCompensation).turretAngle());
+                // /* OPTION 3 */
+                // // ChassisSpeeds rawFieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
+                // // drivetrain.getState().Speeds,
+                // // drivetrain.getPose().getRotation());
+                // // Rotation2d angleToHub2 = Rotation2d.fromDegrees(ShotCalc.calculateSOTF(
+                // // drivetrain.getTurretPose().getTranslation(),
+                // // rawFieldSpeeds, drivetrain.getScoringLocation(),
+                // // ShooterConstants.latencyCompensation).turretAngle());
 
-                // calculate desired angle of turret relative to hub
-                // double angleToHub2 = (Math.atan2(drivetrain.getYfromHub(),
-                // drivetrain.getXfromHub()));
+                // // calculate desired angle of turret relative to hub
+                // // double angleToHub2 = (Math.atan2(drivetrain.getYfromHub(),
+                // // drivetrain.getXfromHub()));
 
-                // calculate desired angle of turret relative to robot
-                Rotation2d desiredTurretAngle2 = (angleToHub2)
-                        .minus(currentRobotAngle2)
-                        .plus(Rotation2d.fromDegrees(180));
-                // Rotation2d desiredTurretAngle2 = currentRobotAngle2;
-                // convert to rotations
-                double convertedTurretAngle2 = desiredTurretAngle2.getDegrees() / 360;
+                // // calculate desired angle of turret relative to robot
+                // Rotation2d desiredTurretAngle2 = (angleToHub2)
+                //         .minus(currentRobotAngle2)
+                //         .plus(Rotation2d.fromDegrees(180));
+                // // Rotation2d desiredTurretAngle2 = currentRobotAngle2;
+                // // convert to rotations
+                // double convertedTurretAngle2 = desiredTurretAngle2.getDegrees() / 360;
 
-                // compute shortest delta between branches
-                double delta2 = convertedTurretAngle2 - (currentTurretToRobotAngle2);
-                delta2 = Math.IEEEremainder(delta2, 1.0);
+                // // compute shortest delta between branches
+                // double delta2 = convertedTurretAngle2 - (currentTurretToRobotAngle2);
+                // delta2 = Math.IEEEremainder(delta2, 1.0);
 
-                // now apply
-                target2 = currentTurretToRobotAngle2 + delta2;
+                // // now apply
+                // target2 = currentTurretToRobotAngle2 + delta2;
 
-                // now enforce mechanical limits with wrap only if truly needed
-                while (target2 > CCWlimit)
-                    target2 -= 1.0;
-                while (target2 < CWLimit)
-                    target2 += 1.0;
+                // // now enforce mechanical limits with wrap only if truly needed
+                // while (target2 > CCWlimit)
+                //     target2 -= 1.0;
+                // while (target2 < CWLimit)
+                //     target2 += 1.0;
 
-                // probe
-                target2 += offset;
-                // SmartDashboard.putNumber("Turret Setpoint with adjustment", target2);
+                // // probe
+                // target2 += offset;
+                // // SmartDashboard.putNumber("Turret Setpoint with adjustment", target2);
 
-                position = target2;
-                break;
+                // position = target2;
+
+                //-----------------------------------------
+
+                case HUB_AIMING:
+    double target2 = 0;
+    double currentTurretToRobotAngle2 = turretMotor.getPosition().getValueAsDouble();
+    Rotation2d currentRobotAngle2 = drivetrain.getPose().getRotation();
+
+    // // --- NEW SOTF CALL ---
+    // ChassisSpeeds rawFieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
+    //         drivetrain.getState().Speeds,
+    //         drivetrain.getPose().getRotation());
+
+    // ShotCalc.ShooterCommand shot = ShotCalc.calculateSOTF(
+    //         drivetrain.getPose().getTranslation(),
+    //         drivetrain.getCurrentTurretPose().getTranslation(),
+    //         rawFieldSpeeds,
+    //         drivetrain.getState().Speeds.omegaRadiansPerSecond,
+    //         drivetrain.getScoringLocation());
+
+    Rotation2d angleToHub2 = currentShotCommand.turretAngle();
+    
+    Rotation2d desiredTurretAngle2 = (angleToHub2)
+            .minus(currentRobotAngle2)
+            .plus(Rotation2d.fromDegrees(180));
+    double convertedTurretAngle2 = desiredTurretAngle2.getDegrees() / 360;
+    double delta2 = convertedTurretAngle2 - (currentTurretToRobotAngle2);
+    delta2 = Math.IEEEremainder(delta2, 1.0);
+    target2 = currentTurretToRobotAngle2 + delta2;
+    while (target2 > CCWlimit)
+        target2 -= 1.0;
+    while (target2 < CWLimit)
+        target2 += 1.0;
+    target2 += offset;
+    position = target2;
+    break;
+    
             case TRENCH_PRESETTINGL:
                 position = TurretConstants.trenchPresetPositionL;
                 break;
