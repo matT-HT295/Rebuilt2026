@@ -52,9 +52,9 @@ public final class ShotCalc {
         double timeOfFlight = ShooterConstants.TOF_MAP.get(distance);
         Translation2d virtualTarget = goalPosition;
 
-        // 6. ITERATIVE SOLVE (2 passes)
+        // 6. ITERATIVE SOLVE (20 passes)
         // Resolves circular dependency: distance -> TOF -> corrected aim -> new distance
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 20; i++) {
             // Where will the turret be when the ball arrives
             Translation2d predictedTurretPos = turretPosition.plus(totalVelocity.times(timeOfFlight));
 

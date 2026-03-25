@@ -156,37 +156,37 @@ public class Turret extends SubsystemBase {
             case IDLING:
                 position = 0.0;
                 break;
-            case IDLE_AIMING:
+            // case IDLE_AIMING:
 
-                double target1 = 0;
-                double currentTurretToRobotAngle1 = turretMotor.getPosition().getValueAsDouble();
-                // calculate robot angle relative to field
-                Rotation2d currentRobotAngle1 = drivetrain.getTurretPose().getRotation();
-                Rotation2d angleToHub1 = drivetrain.getSOTFTurretAngle().getAngle();
+            //     double target1 = 0;
+            //     double currentTurretToRobotAngle1 = turretMotor.getPosition().getValueAsDouble();
+            //     // calculate robot angle relative to field
+            //     Rotation2d currentRobotAngle1 = drivetrain.getTurretPose().getRotation();
+            //     Rotation2d angleToHub1 = drivetrain.getSOTFTurretAngle().getAngle();
 
-                // calculate desired angle of turret relative to hub
-                // double angleToHub = (Math.atan2(passSpot.getY(), passSpot.getX()));
+            //     // calculate desired angle of turret relative to hub
+            //     // double angleToHub = (Math.atan2(passSpot.getY(), passSpot.getX()));
 
-                // calculate desired angle of turret relative to robot
-                Rotation2d desiredTurretAngle1 = (angleToHub1).minus(currentRobotAngle1);
-                // convert to rotations
-                double convertedTurretAngle1 = desiredTurretAngle1.getDegrees() / 360;
+            //     // calculate desired angle of turret relative to robot
+            //     Rotation2d desiredTurretAngle1 = (angleToHub1).minus(currentRobotAngle1);
+            //     // convert to rotations
+            //     double convertedTurretAngle1 = desiredTurretAngle1.getDegrees() / 360;
 
-                // compute shortest delta between branches
-                double delta1 = convertedTurretAngle1 - (currentTurretToRobotAngle1);
-                delta1 = Math.IEEEremainder(delta1, 1.0);
+            //     // compute shortest delta between branches
+            //     double delta1 = convertedTurretAngle1 - (currentTurretToRobotAngle1);
+            //     delta1 = Math.IEEEremainder(delta1, 1.0);
 
-                // now apply
-                target1 = currentTurretToRobotAngle1 + delta1;
+            //     // now apply
+            //     target1 = currentTurretToRobotAngle1 + delta1;
 
-                // now enforce mechanical limits with wrap only if truly needed
-                while (target1 > CCWlimit)
-                    target1 -= 1.0;
-                while (target1 < CWLimit)
-                    target1 += 1.0;
+            //     // now enforce mechanical limits with wrap only if truly needed
+            //     while (target1 > CCWlimit)
+            //         target1 -= 1.0;
+            //     while (target1 < CWLimit)
+            //         target1 += 1.0;
 
-                position = target1;
-                break;
+            //     position = target1;
+            //     break;
             case PASS_AIMING:
                 double target = 0;
                 // leds.LED_ScrollPatternRelative(LEDPattern.gradient(GradientType.kContinuous,
@@ -199,7 +199,7 @@ public class Turret extends SubsystemBase {
     double omegaRad = drivetrain.getState().Speeds.omegaRadiansPerSecond;
     Rotation2d rotationCorrection = Rotation2d.fromRadians(omegaRad * dt);
 
-    Rotation2d angleToHub = currentShotCommand.turretAngle()
+    Rotation2d angleToHub = drivetrain.currentShotCommand.turretAngle()
     .plus(rotationCorrection);
     
     Rotation2d desiredTurretAngle = (angleToHub)
