@@ -37,6 +37,7 @@ import frc.robot.Constants.VisionConstants;
 import frc.robot.Constants.FieldConstants.ScoringZone;
 import frc.robot.subsystems.Drive.TunerConstants.TunerSwerveDrivetrain;
 import frc.robot.subsystems.Scoring.ShotCalc; // ADDED
+import edu.wpi.first.wpilibj.Timer;
 
 /**
  * Class that extends the Phoenix 6 SwerveDrivetrain class and implements
@@ -277,17 +278,17 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     //     return correctedVector;
     // }
 
-    // public Pose2d getCurrentTurretPose() {
-    //     Pose2d turretPose = getPose().transformBy(VisionConstants.turretToCenter);
-    //     turretPose = turretPose.rotateAround(turretPose.getTranslation(), Rotation2d.k180deg);
-    //     return turretPose;
-    // }
+    public Pose2d getCurrentTurretPose() {
+        Pose2d turretPose = getPose().transformBy(VisionConstants.turretToCenter);
+        turretPose = turretPose.rotateAround(turretPose.getTranslation(), Rotation2d.k180deg);
+        return turretPose;
+    }
 
-    // public Translation2d getHub() {
-    //     Translation2d goalLocation = DriverStation.getAlliance().get() == Alliance.Red ? FieldConstants.RED_HUB_POSE
-    //             : FieldConstants.BLUE_HUB_POSE;
-    //     return goalLocation;
-    // }
+    public Translation2d getHub() {
+        Translation2d goalLocation = DriverStation.getAlliance().get() == Alliance.Red ? FieldConstants.RED_HUB_POSE
+                : FieldConstants.BLUE_HUB_POSE;
+        return goalLocation;
+    }
 
     // SOTF Solution 2
     // public double[] SOTFcalc() {
@@ -386,6 +387,8 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         }
         return yDistance;
     }
+
+ 
 
     // /**
     // * Update the pose estimation and std devs with new vision data
@@ -672,6 +675,8 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         return m_sysIdRoutineToApply.dynamic(direction);
     }
 
+       public double shotCommandTimestamp = 0;
+
     @Override
     public void periodic() {
         // ADDED: Update SOTF calculation once per loop — read by Turret and Shooter subsystems
@@ -680,6 +685,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
                     getState().Speeds,
                     getPose().getRotation());
 
+shotCommandTimestamp = Timer.getFPGATimestamp();
             currentShotCommand = ShotCalc.calculateSOTF(
                     getPose().getTranslation(),
                     getCurrentTurretPose().getTranslation(),
@@ -687,6 +693,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
                     getState().Speeds.omegaRadiansPerSecond,
                     getScoringLocation());
         }
+
 
         // vision.updateVision(this);
         TheField.getObject("robot").setPose(getPose());

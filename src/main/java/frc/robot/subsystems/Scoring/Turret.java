@@ -29,6 +29,7 @@ import frc.robot.subsystems.Lights.LEDSubsystem_WPIlib;
 import frc.robot.subsystems.Lights.LEDSubsystem_WPIlib.LEDTarget;
 import frc.util.Interpolation.LoggedTunableNumber;
 import frc.robot.Constants.TurretConstants.SystemState;
+import edu.wpi.first.wpilibj.Timer;
 
 public class Turret extends SubsystemBase {
     private final CommandSwerveDrivetrain drivetrain;
@@ -188,26 +189,18 @@ public class Turret extends SubsystemBase {
                 break;
             case PASS_AIMING:
                 double target = 0;
-                Translation2d passSpot;
-                if (DriverStation.getAlliance().get() == Alliance.Red) {
-                    if (drivetrain.getPose().getY() > 4.03) {
-                        passSpot = new Translation2d(15.5, 7);
-                    } else {
-                        passSpot = new Translation2d(15.5, 1);
-                    }
-                } else {
-                    if (drivetrain.getPose().getY() > 4.03) {
-                        passSpot = new Translation2d(1, 7);
-                    } else {
-                        passSpot = new Translation2d(1, 1);
-                    }
-                }
                 // leds.LED_ScrollPatternRelative(LEDPattern.gradient(GradientType.kContinuous,
                 // Color.kOrange, Color.kYellow), 2.5);
-                double currentTurretToRobotAngle = turretMotor.getPosition().getValueAsDouble();
+     double currentTurretToRobotAngle = turretMotor.getPosition().getValueAsDouble();
     Rotation2d currentRobotAngle = drivetrain.getPose().getRotation();
 
-    Rotation2d angleToHub = currentShotCommand.turretAngle();
+    // Correct for staleness of shot command
+    double dt = Timer.getFPGATimestamp() - drivetrain.shotCommandTimestamp;
+    double omegaRad = drivetrain.getState().Speeds.omegaRadiansPerSecond;
+    Rotation2d rotationCorrection = Rotation2d.fromRadians(omegaRad * dt);
+
+    Rotation2d angleToHub = currentShotCommand.turretAngle()
+    .plus(rotationCorrection);
     
     Rotation2d desiredTurretAngle = (angleToHub)
             .minus(currentRobotAngle)
@@ -223,7 +216,7 @@ public class Turret extends SubsystemBase {
     target += offset;
     position = target;
     break;
-            case HUB_AIMING:
+           // case HUB_AIMING:
                 // double target2 = 0;
                 // // leds.LED_ScrollPatternRelative(LEDPattern.gradient(GradientType.kContinuous,
                 // // Color.kCadetBlue, Color.kLightGreen), 2.5);
@@ -282,19 +275,13 @@ public class Turret extends SubsystemBase {
     double currentTurretToRobotAngle2 = turretMotor.getPosition().getValueAsDouble();
     Rotation2d currentRobotAngle2 = drivetrain.getPose().getRotation();
 
-    // // --- NEW SOTF CALL ---
-    // ChassisSpeeds rawFieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
-    //         drivetrain.getState().Speeds,
-    //         drivetrain.getPose().getRotation());
+    // Correct for staleness of shot command
+    double dt2 = Timer.getFPGATimestamp() - drivetrain.shotCommandTimestamp;
+    double omegaRad2 = drivetrain.getState().Speeds.omegaRadiansPerSecond;
+    Rotation2d rotationCorrection2 = Rotation2d.fromRadians(omegaRad2 * dt2);
 
-    // ShotCalc.ShooterCommand shot = ShotCalc.calculateSOTF(
-    //         drivetrain.getPose().getTranslation(),
-    //         drivetrain.getCurrentTurretPose().getTranslation(),
-    //         rawFieldSpeeds,
-    //         drivetrain.getState().Speeds.omegaRadiansPerSecond,
-    //         drivetrain.getScoringLocation());
-
-    Rotation2d angleToHub2 = currentShotCommand.turretAngle();
+    Rotation2d angleToHub2 = drivetrain.currentShotCommand.turretAngle()
+    .plus(rotationCorrection2);
     
     Rotation2d desiredTurretAngle2 = (angleToHub2)
             .minus(currentRobotAngle2)
