@@ -49,6 +49,7 @@ import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.robot.Robot;
 
 /**
  * This class is where the bulk of the robot should be declared. Since
@@ -126,6 +127,10 @@ public class RobotContainer {
         configureBindings();
         configureNamedCommands();
         configureAutoCommands();
+
+        if (Robot.isSimulation()) {
+    drivetrain.resetPose(new Pose2d(2, 4, Rotation2d.fromDegrees(0)));
+}
     }
 
     /**
@@ -146,19 +151,19 @@ public class RobotContainer {
         drivetrain.registerTelemetry(logger::telemeterize);
 
         /*********** DRIVER ************/
-        drivetrain.setDefaultCommand(
-                // Drivetrain will execute this command periodically
-                drivetrain.applyRequest(() -> {
-                    double slowFactor = operator.rightTrigger().getAsBoolean() ? .5 : 1.0;
-                    return drive.withVelocityX(-driver.getLeftY() * MaxSpeed * slowFactor) // Drive forward with
-                                                                                           // negative Y (forward)
-                            .withVelocityY(-driver.getLeftX() * MaxSpeed * slowFactor) // Drive left with negative X
-                                                                                       // (left)
-                            .withRotationalRate(-driver.getRightX() * MaxAngularRate * slowFactor); // Drive
-                                                                                                    // counterclockwise
-                                                                                                    // with
-                    // negative X (left)
-                }));
+       drivetrain.setDefaultCommand(
+    drivetrain.applyRequest(() -> {
+        double slowFactor = operator.rightTrigger().getAsBoolean() ? .5 : 1.0;
+        double simTranslationFactor = Robot.isSimulation() ? 0.5 : 1.0;
+        double rawRotation = driver.getRightX();
+        if (Robot.isSimulation()) {
+            rawRotation = Math.abs(rawRotation) < 0.1 ? 0 : rawRotation * 0.07;
+        }
+        return drive
+            .withVelocityX(-driver.getLeftY() * MaxSpeed * slowFactor * simTranslationFactor)
+            .withVelocityY(-driver.getLeftX() * MaxSpeed * slowFactor * simTranslationFactor)
+            .withRotationalRate(-rawRotation * MaxAngularRate * slowFactor);
+    }));
         // gyro reset
         driver.start().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
 

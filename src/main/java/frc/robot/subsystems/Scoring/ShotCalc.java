@@ -43,7 +43,7 @@ public final class ShotCalc {
 
         // 4. NULL SAFETY — too close to target
         Translation2d toGoal = goalPosition.minus(turretPosition);
-        double distance = toGoal.getNorm();
+        double distance = toGoal.getNorm();{
         if (distance < 0.5) // If we're within 0.5m of the goal, SOTF isn't reliable
             return new ShooterCommand(0, new Rotation2d(), 0);
         }
@@ -96,3 +96,4 @@ public final class ShotCalc {
 
         return new ShooterCommand(adjustedRPS, turretAngle, adjustedHood);
     }
+}

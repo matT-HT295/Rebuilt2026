@@ -71,16 +71,16 @@ public final class Constants {
 
         public static final InterpolatingDoubleTreeMap RPS_MAP = new InterpolatingDoubleTreeMap();
         static {
-            RPS_MAP.put(2.0, 47);
+            RPS_MAP.put(2.0, 47d);
            // RPS_MAP.put(2.5, 0d);
-            RPS_MAP.put(3.0, 50);
+            RPS_MAP.put(3.0, 50d);
             //RPS_MAP.put(3.5, 0d);
-            RPS_MAP.put(4.0, 52);
+            RPS_MAP.put(4.0, 52d);
             //RPS_MAP.put(4.5, 0d);
-            RPS_MAP.put(5.0, 55);
+            RPS_MAP.put(5.0, 55d);
             //RPS_MAP.put(5.5, 0d);
-            RPS_MAP.put(6.0, 62);
-            RPS_MAP.put(10.0, 85);
+            RPS_MAP.put(6.0, 62d);
+            RPS_MAP.put(10.0, 85d);
         };
 
         public static final InterpolatingDoubleTreeMap REVERSE_RPM_MAP = new InterpolatingDoubleTreeMap();
@@ -496,10 +496,10 @@ public final class Constants {
         public static Translation2d BLUE_HUB_POSE = new Translation2d(4.62, 4.03); // was 4.03
         public static Translation2d RED_HUB_POSE = new Translation2d(12, 4.03); // was 11.92, 4.03
 
-        public static Translation2d BLUE_PASS_SPOT_1 = new Translation2d(1, 5); // 1
-        public static Translation2d BLUE_PASS_SPOT_2 = new Translation2d(1, 3); // 7
-        public static Translation2d RED_PASS_SPOT_1 = new Translation2d(14.5, 5); // 15.5, 7
-        public static Translation2d RED_PASS_SPOT_2 = new Translation2d(14.5, 3); // 15.5, 1
+        public static Translation2d BLUE_PASS_SPOT_1 = new Translation2d(1, 3); // 1
+        public static Translation2d BLUE_PASS_SPOT_2 = new Translation2d(1, 5); // 7
+        public static Translation2d RED_PASS_SPOT_1 = new Translation2d(14.5, 3); // 15.5, 7
+        public static Translation2d RED_PASS_SPOT_2 = new Translation2d(14.5, 5); // 15.5, 1
 
         public static Map<ScoringZone, Pose2d> scoringZoneLUT = Map.ofEntries(
                 Map.entry(ScoringZone.RED_PASSING_1, new Pose2d(RED_PASS_SPOT_1, new Rotation2d())),
