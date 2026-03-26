@@ -5,6 +5,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import frc.robot.Constants.ShooterConstants;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public final class ShotCalc {
 
@@ -22,7 +23,7 @@ public final class ShotCalc {
             Translation2d goalPosition) {
 
         // 1. LOW-PASS FILTER on translational velocity
-        double alpha = 0.15;
+        double alpha = 0.0;
         filteredSpeeds.vxMetersPerSecond = alpha * rawFieldSpeeds.vxMetersPerSecond
                 + (1 - alpha) * filteredSpeeds.vxMetersPerSecond;
         filteredSpeeds.vyMetersPerSecond = alpha * rawFieldSpeeds.vyMetersPerSecond
@@ -40,6 +41,13 @@ public final class ShotCalc {
         Translation2d totalVelocity = new Translation2d(
                 filteredSpeeds.vxMetersPerSecond,
                 filteredSpeeds.vyMetersPerSecond).plus(rotationalVelocity);
+
+SmartDashboard.putNumber("Rotational Vel X", rotationalVelocity.getX());
+SmartDashboard.putNumber("Rotational Vel Y", rotationalVelocity.getY());
+SmartDashboard.putNumber("Translational Vel X", filteredSpeeds.vxMetersPerSecond);
+SmartDashboard.putNumber("Translational Vel Y", filteredSpeeds.vyMetersPerSecond);
+SmartDashboard.putNumber("Total Vel X", totalVelocity.getX());
+SmartDashboard.putNumber("Total Vel Y", totalVelocity.getY());
 
         // 4. NULL SAFETY — too close to target
         Translation2d toGoal = goalPosition.minus(turretPosition);
@@ -95,5 +103,9 @@ public final class ShotCalc {
         double adjustedHood = baselineHoodAngle;
 
         return new ShooterCommand(adjustedRPS, turretAngle, adjustedHood);
+        
+
+        
     }
+
 }

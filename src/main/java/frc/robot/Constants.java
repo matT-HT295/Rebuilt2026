@@ -112,16 +112,16 @@ public final class Constants {
 
         public static final InterpolatingDoubleTreeMap TOF_MAP = new InterpolatingDoubleTreeMap();
         static {
-            TOF_MAP.put(2.0, 0.975);
+            TOF_MAP.put(2.0, 0.3);
             //TOF_MAP.put(2.5, 0d);
-            TOF_MAP.put(3.0, 1.125);
+            TOF_MAP.put(3.0, 0.35);
             //TOF_MAP.put(3.5, 0d);
-            TOF_MAP.put(4.0, 1.175);
+            TOF_MAP.put(4.0, 0.4);
            // TOF_MAP.put(4.5, 0d);
-            TOF_MAP.put(5.0, 1.225);
+            TOF_MAP.put(5.0, 0.45);
            // TOF_MAP.put(5.5, 0d);
-            TOF_MAP.put(6.0, 1.27);
-            TOF_MAP.put(10.0, 1.47);
+            TOF_MAP.put(6.0, 0.5);
+            TOF_MAP.put(10.0, 0.8);
         };
 
         public static double activeWaitingSpeed = 30;
@@ -147,11 +147,11 @@ public final class Constants {
                 2);
         public static PolynomialRegression timeOfFlightInterpolation = new PolynomialRegression(
                 Arrays.asList(
-                        new Point(2, .975),
-                        new Point(3, 1.125),
-                        new Point(4, 1.175),
-                        new Point(5, 1.18),
-                        new Point(6, 1.28)),
+                        new Point(2, 0.25),
+                        new Point(3, 0.30),
+                        new Point(4, 0.35),
+                        new Point(5, 0.40),
+                        new Point(6, 0.45)),
                 2);
         public static double distanceToHub;
         public static double passDistance;

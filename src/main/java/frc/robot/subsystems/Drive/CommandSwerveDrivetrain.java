@@ -2,6 +2,8 @@ package frc.robot.subsystems.Drive;
 
 import static edu.wpi.first.units.Units.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -39,6 +41,12 @@ import frc.robot.Constants.FieldConstants.ScoringZone;
 import frc.robot.subsystems.Drive.TunerConstants.TunerSwerveDrivetrain;
 import frc.robot.subsystems.Scoring.ShotCalc;
 import edu.wpi.first.wpilibj.Timer;
+import java.util.ArrayList;
+import java.util.List;
+import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.networktables.StructArrayPublisher;
+import edu.wpi.first.networktables.NetworkTableInstance;
 
 public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Subsystem {
     public Vision vision = new Vision();
@@ -58,6 +66,12 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     public Pose2d getPose() {
         return this.getState().Pose;
     }
+
+//    private final StructArrayPublisher<Pose3d> trajectoryPublisher = 
+//     NetworkTableInstance.getDefault()
+//         .getTable("SmartDashboard")
+//         .getStructArrayTopic("ball trajectory 3d", Pose3d.struct)
+//         .publish();
 
     public Translation2d getScoringLocation() {
         Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
@@ -105,6 +119,99 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
         return futurePose;
     }
+    
+    private final StructArrayPublisher<Pose3d> trajectoryPublisher =
+    NetworkTableInstance.getDefault()
+        .getTable("SmartDashboard")
+        .getStructArrayTopic("ball trajectory 3d", Pose3d.struct)
+        .publish();
+
+private void updateBallTrajectory() {
+    if (!Robot.isSimulation()) return;
+
+    Translation2d turretPos = getCurrentTurretPose().getTranslation();
+    double distance = getDistanceFromHub();
+    double tof = ShooterConstants.timeOfFlightInterpolation.getPrediction(distance);
+
+    double hoodAngleDeg = ShooterConstants.HOOD_MAP.get(distance)
+        * ShooterConstants.hoodConversionRotToDeg;
+    double hoodHomeAngle = 18.0;
+    double launchAngleRad = Math.toRadians(90.0 - (hoodHomeAngle + hoodAngleDeg));
+
+    double flywheelSurfaceSpeed = currentShotCommand.RPS() * Math.PI * (4 * 0.0254);
+    double exitSpeed = flywheelSurfaceSpeed * 0.45;
+    double horizontalSpeed = exitSpeed * Math.cos(launchAngleRad);
+    double verticalSpeed = exitSpeed * Math.sin(launchAngleRad);
+
+    ChassisSpeeds fieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
+        getState().Speeds, getPose().getRotation());
+    Translation2d virtualTarget = getScoringLocation().minus(
+        new Translation2d(fieldSpeeds.vxMetersPerSecond, fieldSpeeds.vyMetersPerSecond)
+        .times(tof));
+
+    double dx = virtualTarget.getX() - turretPos.getX();
+    double dy = virtualTarget.getY() - turretPos.getY();
+    double horizontalDist = Math.sqrt(dx * dx + dy * dy);
+    if (horizontalDist < 0.01) return;
+
+    double vx = (dx / horizontalDist) * horizontalSpeed;
+double vy = (dy / horizontalDist) * horizontalSpeed;
+
+    double launchHeight = 0.46;
+    double g = 9.81;
+    int steps = 20;
+    double[] arr = new double[steps * 3];
+    int count = 0;
+
+    // THIS LOOP WAS MISSING - fills arr with trajectory points
+   // Use time to hit ground, not TOF to goal
+double timeToGround = (verticalSpeed + Math.sqrt(verticalSpeed * verticalSpeed + 2 * g * launchHeight)) / g;
+
+for (int i = 0; i < steps; i++) {
+    double t = (timeToGround / steps) * i;
+    double x = turretPos.getX() + vx * t;
+    double y = turretPos.getY() + vy * t;
+    double z = launchHeight + verticalSpeed * t - 0.5 * g * t * t;
+    if (z < 0) break;
+    arr[count * 3]     = x;
+    arr[count * 3 + 1] = y;
+    arr[count * 3 + 2] = z;
+    count++;
+}
+
+    // Build Pose3d array and publish
+    Pose3d[] poseArray = new Pose3d[count];
+    for (int i = 0; i < count; i++) {
+        poseArray[i] = new Pose3d(
+            arr[i * 3],
+            arr[i * 3 + 1],
+            arr[i * 3 + 2],
+            new Rotation3d()
+        );
+    }
+
+  trajectoryPublisher.set(poseArray);
+
+    // Debug
+    SmartDashboard.putNumber("Trajectory VX", vx);
+    SmartDashboard.putNumber("Trajectory VY", vy);
+    SmartDashboard.putNumber("Trajectory Vertical Speed", verticalSpeed);
+    SmartDashboard.putNumber("Trajectory TOF", tof);
+    SmartDashboard.putNumber("Trajectory Distance", distance);
+    SmartDashboard.putNumber("Trajectory Exit Speed", exitSpeed);
+    SmartDashboard.putNumber("Trajectory Horizontal Speed", horizontalSpeed);
+    SmartDashboard.putNumber("Trajectory Point Count", count);
+    // Debug - verify virtual target matches shot angle
+double angleToVirtualTarget = Math.toDegrees(Math.atan2(
+    virtualTarget.getY() - turretPos.getY(),
+    virtualTarget.getX() - turretPos.getX()));
+SmartDashboard.putNumber("Angle to Virtual Target", angleToVirtualTarget);
+SmartDashboard.putNumber("Shot Command Angle", currentShotCommand.turretAngle().getDegrees());
+SmartDashboard.putNumber("Virtual Target X", virtualTarget.getX());
+SmartDashboard.putNumber("Virtual Target Y", virtualTarget.getY());
+SmartDashboard.putNumber("Turret Pos X", turretPos.getX());
+SmartDashboard.putNumber("Turret Pos Y", turretPos.getY());
+}
 
     private ChassisSpeeds filteredFieldSpeeds = new ChassisSpeeds(0, 0, 0);
 
@@ -302,6 +409,19 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
                     getScoringLocation());
         }
 
+        // Publish clean 50Hz pose for simulation visualization
+if (Robot.isSimulation()) {
+    SmartDashboard.putNumberArray("SimRobotPose", new double[]{
+        getPose().getX(),
+        getPose().getY(),
+        getPose().getRotation().getRadians()
+    });
+}
+
+if (Robot.isSimulation()) {
+    updateBallTrajectory();
+}
+
         // Update field visualization
         TheField.getObject("robot").setPose(getPose());
         TheField.getObject("target").setPose(new Pose2d(getScoringLocation(), new Rotation2d()));
@@ -331,6 +451,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         SmartDashboard.putNumber("Field Vy", ChassisSpeeds.fromRobotRelativeSpeeds(
                 getState().Speeds, getPose().getRotation()).vyMetersPerSecond);
         SmartDashboard.putNumber("Omega Rad", getState().Speeds.omegaRadiansPerSecond);
+        
 
         // Operator perspective
         if (Robot.isSimulation()) {
