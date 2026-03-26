@@ -1,5 +1,7 @@
 package frc.robot.subsystems.Scoring;
 
+import java.util.function.Function;
+
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.StatusCode;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
@@ -10,6 +12,9 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Robot;
@@ -17,6 +22,7 @@ import frc.robot.Constants.ShooterConstants;
 import frc.robot.Constants.ShooterConstants.ShooterWantedState;
 import frc.robot.Constants.ShooterConstants.SystemState;
 import frc.robot.subsystems.Drive.CommandSwerveDrivetrain;
+import frc.robot.subsystems.Scoring.ShotCalc.ShooterCommand;
 import frc.util.Interpolation.LoggedTunableNumber;
 
 public class Shooter extends SubsystemBase {
@@ -59,8 +65,10 @@ public class Shooter extends SubsystemBase {
         this.drivetrain = m_drivetrain;
 
         // CURRENT LIMITS
-        hoodMotorConfig.CurrentLimits.SupplyCurrentLimit = 15;
-        hoodMotorConfig.CurrentLimits.StatorCurrentLimit = 15;
+        hoodMotorConfig.CurrentLimits.SupplyCurrentLimit = ShooterConstants.hoodSupplyCurrentLimit;
+        hoodMotorConfig.CurrentLimits.StatorCurrentLimit = ShooterConstants.hoodStatorCurrentLimit;
+        shooterMotor2Config.CurrentLimits.SupplyCurrentLimit = ShooterConstants.SupplyCurrentLimit;
+        shooterMotor2Config.CurrentLimits.StatorCurrentLimit = ShooterConstants.StatorCurrentLimit;
         shooterMotor1Config.CurrentLimits.SupplyCurrentLimit = ShooterConstants.SupplyCurrentLimit;
         shooterMotor1Config.CurrentLimits.StatorCurrentLimit = ShooterConstants.StatorCurrentLimit;
         shooterMotor2Config.CurrentLimits.SupplyCurrentLimit = ShooterConstants.SupplyCurrentLimit;
@@ -200,6 +208,42 @@ public class Shooter extends SubsystemBase {
                 position = 5.5;
                 break;
             case HUB_SHOOTING:
+                // Translation2d correctedVector = drivetrain.getSOTFTurretAngle();
+                // option 1
+                // Translation2d correctedVector = drivetrain.SOTF_CALC();
+                // double correctedDistance = correctedVector.getNorm();
+
+                // motorspeed = ShooterConstants.shooterSpeedInterpolation
+                // .getPrediction(correctedDistance);
+
+                // position = MathUtil.clamp(
+                // ShooterConstants.hoodAngleInterpolation.getPrediction(correctedDistance),
+                // -0.5,
+                // 8);
+                // option 2
+                // position = drivetrain.SOTFcalc()[1] /
+                // ShooterConstants.hoodConversionRotToDeg;
+                // motorspeed = drivetrain.SOTFcalc()[2];
+
+                // option 3
+                ChassisSpeeds rawFieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
+                        drivetrain.getState().Speeds,
+                        drivetrain.getPose().getRotation());
+                position = ShotCalc.calculateSOTF(
+                        drivetrain.getPose().getTranslation(),
+                        rawFieldSpeeds,
+                        drivetrain.getScoringLocation(),
+                        ShooterConstants.latencyCompensation).hoodAngle();
+                motorspeed = ShotCalc.calculateSOTF(
+                        drivetrain.getPose().getTranslation(),
+                        rawFieldSpeeds,
+                        drivetrain.getScoringLocation(),
+                        ShooterConstants.latencyCompensation).RPS();
+                // option 4
+                // frc.robot.subsystems.Scoring.ShotCalc2.ShooterCommand values =
+                // ShotCalc2.calculateSOTF(drivetrain);
+                // position = values.hoodAngle();
+                // motorspeed = values.RPS();
                 motorspeed = drivetrain.currentShotCommand.RPS();
                 position = MathUtil.clamp(drivetrain.currentShotCommand.hoodAngle(), -0.5, 8);
                 break;

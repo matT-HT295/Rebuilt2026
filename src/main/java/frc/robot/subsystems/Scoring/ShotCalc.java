@@ -7,6 +7,7 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import frc.robot.Constants.ShooterConstants;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
+// option 3
 public final class ShotCalc {
 
     public static record ShooterCommand(double RPS, Rotation2d turretAngle, double hoodAngle) {

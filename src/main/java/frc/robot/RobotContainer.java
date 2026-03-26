@@ -74,6 +74,16 @@ public class RobotContainer {
     public final MatchInformation matchInformation = new MatchInformation(matchTimer);
     public SendableChooser<Command> sendableChooser = new SendableChooser<>();
 
+    // private double MaxSpeed = 1.0 *
+    // TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts
+    // desired top speed
+
+    private double MaxAngularRate = RotationsPerSecond.of(0.75).in(RadiansPerSecond); // 3/4 of a rotation per second
+                                                                                      // max angular velocity
+
+    private final SwerveRequest.SwerveDriveBrake brake = new SwerveRequest.SwerveDriveBrake();
+    // private final SwerveRequest.PointWheelsAt point = new
+    // SwerveRequest.PointWheelsAt();
     private double MaxAngularRate = RotationsPerSecond.of(0.75).in(RadiansPerSecond);
 
     // Replace with CommandPS4Controller or CommandJoystick if needed
@@ -120,6 +130,7 @@ public class RobotContainer {
         configureBindings();
         configureNamedCommands();
         configureAutoCommands();
+        configureTestCommands();
 
         if (Robot.isSimulation()) {
             drivetrain.resetPose(new Pose2d(2, 4, Rotation2d.fromDegrees(0)));
@@ -184,8 +195,9 @@ public class RobotContainer {
 
         // intake
         driver.rightBumper()
-                .onTrue(new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.INTAKE)))
-                .onFalse(new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.IDLE)));
+                .onTrue(new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.INTAKE)));
+        // .onFalse(new InstantCommand(() ->
+        // intake.setWantedIntakeState(IntakeWantedState.IDLE)));
 
         // retract
         driver.leftBumper()
@@ -209,6 +221,12 @@ public class RobotContainer {
                                 new InstantCommand(() -> intake.disableEcoModeIntake()),
                                 new InstantCommand(() -> turret.disableEcoModeTurret()),
                                 new InstantCommand(() -> feeder.disableEcoModeFeeder())));
+        // brake
+        driver.rightTrigger().whileTrue(drivetrain.applyRequest(() -> brake));
+        // driver.b().whileTrue(drivetrain.applyRequest(() ->
+        // point.withModuleDirection(new Rotation2d(-driver.getLeftY(),
+        // -driver.getLeftX()))
+        // ));
 
         /********* OPERATOR *********/
 
@@ -322,6 +340,15 @@ if (Robot.isSimulation() && driver2 != null) {
         // new DisableLED(normalLights).schedule();
     }
 
+    public void configureTestCommands() {
+        SmartDashboard.putData("Intake RESET", new InstantCommand(() -> intake.setZero()));
+    }
+
+    /**
+     * Use this to pass the autonomous command to the main {@link Robot} class.
+     *
+     * @return the command to run in autonomous
+     */
     public Command getAutonomousCommand() {
         return sendableChooser.getSelected();
     }
@@ -357,7 +384,6 @@ if (Robot.isSimulation() && driver2 != null) {
                 new SequentialCommandGroup(
                         new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.TRENCH_SHOOT)),
                         new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.TRENCH_PRESETL)),
-                        waitToShoot(),
                         new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.SHOOT)),
                         wait(1.5),
                         new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.RETRACT)))
@@ -367,7 +393,6 @@ if (Robot.isSimulation() && driver2 != null) {
                 new SequentialCommandGroup(
                         new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.TRENCH_SHOOT)),
                         new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.TRENCH_PRESETR)),
-                        waitToShoot(),
                         new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.SHOOT)),
                         wait(1.5),
                         new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.RETRACT)))

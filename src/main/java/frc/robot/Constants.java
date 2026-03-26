@@ -124,6 +124,45 @@ public final class Constants {
             TOF_MAP.put(10.0, 0.7);
         };
 
+        public static final InterpolatingDoubleTreeMap PASSING_TOF_MAP = new InterpolatingDoubleTreeMap();
+        static {
+            PASSING_TOF_MAP.put(2.0, 0d);
+            PASSING_TOF_MAP.put(2.5, 0d);
+            PASSING_TOF_MAP.put(3.0, 0d);
+            PASSING_TOF_MAP.put(3.5, 0d);
+            PASSING_TOF_MAP.put(4.0, 0d);
+            PASSING_TOF_MAP.put(4.5, 0d);
+            PASSING_TOF_MAP.put(5.0, 0d);
+            PASSING_TOF_MAP.put(5.5, 0d);
+            PASSING_TOF_MAP.put(6.0, 0d);
+        };
+
+        public static final InterpolatingDoubleTreeMap PASSING_HOOD_MAP = new InterpolatingDoubleTreeMap();
+        static {
+            PASSING_HOOD_MAP.put(2.0, 0d);
+            PASSING_HOOD_MAP.put(2.5, 0d);
+            PASSING_HOOD_MAP.put(3.0, 0d);
+            PASSING_HOOD_MAP.put(3.5, 0d);
+            PASSING_HOOD_MAP.put(4.0, 0d);
+            PASSING_HOOD_MAP.put(4.5, 0d);
+            PASSING_HOOD_MAP.put(5.0, 0d);
+            PASSING_HOOD_MAP.put(5.5, 0d);
+            PASSING_HOOD_MAP.put(6.0, 0d);
+        };
+
+        public static final InterpolatingDoubleTreeMap PASSING_RPS_MAP = new InterpolatingDoubleTreeMap();
+        static {
+            PASSING_RPS_MAP.put(2.0, 0d);
+            PASSING_RPS_MAP.put(2.5, 0d);
+            PASSING_RPS_MAP.put(3.0, 0d);
+            PASSING_RPS_MAP.put(3.5, 0d);
+            PASSING_RPS_MAP.put(4.0, 0d);
+            PASSING_RPS_MAP.put(4.5, 0d);
+            PASSING_RPS_MAP.put(5.0, 0d);
+            PASSING_RPS_MAP.put(5.5, 0d);
+            PASSING_RPS_MAP.put(6.0, 0d);
+        };
+
         public static double activeWaitingSpeed = 30;
         public static double inactiveWaitingSpeed;
         public static PolynomialRegression hoodAngleInterpolation = new PolynomialRegression(
@@ -163,6 +202,10 @@ public final class Constants {
 
         public static int SupplyCurrentLimit = 80; // 80
         public static int StatorCurrentLimit = 80; // 80
+
+        public static int hoodSupplyCurrentLimit = 15; // 80
+        public static int hoodStatorCurrentLimit = 15; // 80
+
         public static double homingThreshold;
         public static double tolerance = 5;
 
@@ -212,7 +255,7 @@ public final class Constants {
         public static int StatorCurrentLimit = 100; // 80
 
         public static int ExtensionSupplyCurrentLimit = 80; // 80
-        public static int ExtensionStatorCurrentLimit = 60; // 80
+        public static int ExtensionStatorCurrentLimit = 50; // 80
 
         public static int intakeMotorID = 32;
         public static int intakeExtensionMotorID = 31;
@@ -221,7 +264,7 @@ public final class Constants {
         public static double intakingMAXPosition = 10.022461;
         public static double intakingPosition = 10;
         public static double intakingSpeed = -0.9;
-        public static double slowerIntakeKa = 0.5;
+        public static double slowerIntakeKa = 1.0;
         public static double intakeExtensionHomingThreshold;
         public static double shootingPosition;
         public static double retractingPos = 0;
@@ -263,7 +306,7 @@ public final class Constants {
         public static double hubPresetPosition;
         public static double trenchPresetPositionL = .53;
         public static double trenchPresetPositionR = .50;
-        public static double tolerance = 0.01; // 0.007
+        public static double tolerance = 0.05; // 0.007
 
         public static double[] turretPID = { 51, 0, 0 };
         public static double[] turretSVA = { 0, 0, 0 };

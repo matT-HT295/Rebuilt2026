@@ -174,6 +174,32 @@ public class Turret extends SubsystemBase {
                 double target2 = 0;
                 double currentTurretToRobotAngle2 = getTurretPosition();
                 Rotation2d currentRobotAngle2 = drivetrain.getPose().getRotation();
+                // Rotation2d angleToHub2 = drivetrain.getSOTFTurretAngle().getAngle();
+
+                /* OPTION 1 */
+                // Rotation2d angleToHub2 = drivetrain.SOTF_CALC().getAngle();
+
+                /* OPTION 2 */
+                // Rotation2d angleToHub2 = Rotation2d.fromDegrees(drivetrain.SOTFcalc()[0]);
+
+                /* OPTION 3 */
+                ChassisSpeeds rawFieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
+                        drivetrain.getState().Speeds,
+                        drivetrain.getPose().getRotation());
+                Rotation2d angleToHub2 = (ShotCalc.calculateSOTF(
+                        drivetrain.getTurretPose().getTranslation(),
+                        rawFieldSpeeds, drivetrain.getScoringLocation(),
+                        ShooterConstants.latencyCompensation).turretAngle());
+
+                /* OPTION 4 */
+                // Rotation2d angleToHub2 = ShotCalc2.calculateSOTF(drivetrain).turretAngle();
+
+                // calculate desired angle of turret relative to hub
+                // double angleToHub2 = (Math.atan2(drivetrain.getYfromHub(),
+                // drivetrain.getXfromHub()));
+
+                // calculate desired angle of turret relative to robot
+                Rotation2d desiredTurretAngle2 = (angleToHub2)
 
                 double dt2 = Timer.getFPGATimestamp() - drivetrain.shotCommandTimestamp;
                 double omegaRad2 = drivetrain.getState().Speeds.omegaRadiansPerSecond;

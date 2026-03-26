@@ -24,6 +24,7 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
@@ -190,6 +191,63 @@ for (int i = 0; i < steps; i++) {
         );
     }
 
+    // option 1
+    public Translation2d SOTF_CALC() {
+
+        Pose2d turretPose = getCurrentTurretPose();
+
+        Translation2d realTarget = getScoringLocation();
+        // alliance == Alliance.Red
+        // ? VisionConstants.RED_HUB_POSE
+        // : VisionConstants.BLUE_HUB_POSE;
+
+        Translation2d turretPos = turretPose.getTranslation();
+
+        // Convert robot velocity to field frame
+        ChassisSpeeds fieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
+                getState().Speeds,
+                getPose().getRotation());
+
+        Translation2d robotVelocity = new Translation2d(
+                fieldSpeeds.vxMetersPerSecond,
+                fieldSpeeds.vyMetersPerSecond);
+
+        double omega = fieldSpeeds.omegaRadiansPerSecond;
+
+        // turret offset from robot center
+        Translation2d turretOffset = VisionConstants.turretToCenter.getTranslation();
+
+        // rotational velocity of turret
+        Translation2d rotationalVelocity = new Translation2d(
+                -omega * turretOffset.getY(),
+                omega * turretOffset.getX());
+
+        Translation2d totalRobotVelocity = robotVelocity.plus(rotationalVelocity);
+
+        Translation2d virtualTarget = realTarget;
+
+        Translation2d toTarget = virtualTarget.minus(getCurrentTurretPose().getTranslation());
+
+        double distance = toTarget.getNorm();
+
+        double timeOfFlight = ShooterConstants.timeOfFlightInterpolation
+                .getPrediction(distance);
+
+        // ITERATIVE SOLVE (2 passes)
+        for (int i = 0; i < 2; i++) {
+
+            Translation2d predictedTurretPos = turretPos.plus(totalRobotVelocity.times(timeOfFlight));
+
+            toTarget = virtualTarget.minus(predictedTurretPos);
+
+            distance = toTarget.getNorm();
+
+            timeOfFlight = ShooterConstants.timeOfFlightInterpolation
+                    .getPrediction(distance);
+
+            virtualTarget = realTarget.minus(
+                    totalRobotVelocity.times(timeOfFlight));
+        }
   trajectoryPublisher.set(poseArray);
 
     // Debug
@@ -215,6 +273,8 @@ SmartDashboard.putNumber("Turret Pos Y", turretPos.getY());
 
     private ChassisSpeeds filteredFieldSpeeds = new ChassisSpeeds(0, 0, 0);
 
+        return correctedVector;
+    }
     public ShotCalc.ShooterCommand currentShotCommand =
         new ShotCalc.ShooterCommand(0, new Rotation2d(), 0);
 
@@ -230,6 +290,142 @@ SmartDashboard.putNumber("Turret Pos Y", turretPos.getY());
                 : FieldConstants.BLUE_HUB_POSE;
         return goalLocation;
     }
+
+    // option 2
+    public double[] SOTFcalc() {
+
+        // 1. GET TURRET POSE
+        Pose2d turretPose = getCurrentTurretPose();
+        Translation2d turretPos = turretPose.getTranslation();
+
+        // 2. GET TARGET
+        Translation2d realTarget = getScoringLocation();
+
+        // 3. FIELD-RELATIVE SPEEDS
+        ChassisSpeeds rawFieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
+                getState().Speeds,
+                getPose().getRotation());
+
+        // 4. LOW-PASS FILTER
+        double alpha = 0.15;
+        filteredFieldSpeeds.vxMetersPerSecond = alpha * rawFieldSpeeds.vxMetersPerSecond
+                + (1 - alpha) * filteredFieldSpeeds.vxMetersPerSecond;
+        filteredFieldSpeeds.vyMetersPerSecond = alpha * rawFieldSpeeds.vyMetersPerSecond
+                + (1 - alpha) * filteredFieldSpeeds.vyMetersPerSecond;
+        filteredFieldSpeeds.omegaRadiansPerSecond = rawFieldSpeeds.omegaRadiansPerSecond;
+
+        // 5. ROTATIONAL VELOCITY CORRECTION
+        double omega = filteredFieldSpeeds.omegaRadiansPerSecond;
+        Translation2d turretOffset = turretPos.minus(getPose().getTranslation());
+        Translation2d rotationalVelocity = new Translation2d(
+                -omega * turretOffset.getY(),
+                omega * turretOffset.getX());
+
+        // 6. TOTAL ROBOT VELOCITY
+        Translation2d totalVelocity = new Translation2d(
+                filteredFieldSpeeds.vxMetersPerSecond,
+                filteredFieldSpeeds.vyMetersPerSecond).plus(rotationalVelocity);
+
+        // 7. ITERATIVE SOLVE — predict turret position only
+        // Resolves circular dependency: distance -> TOF -> corrected aim -> new
+        // distance
+        Translation2d toTarget = realTarget.minus(turretPos);
+        double distance = toTarget.getNorm();
+        double timeOfFlight = ShooterConstants.timeOfFlightInterpolation.getPrediction(distance);
+
+        for (int i = 0; i < 2; i++) {
+            // Where will the turret be when the ball arrives?
+            Translation2d predictedTurretPos = turretPos.plus(totalVelocity.times(timeOfFlight));
+
+            // Recalculate distance and TOF based on corrected geometry
+            toTarget = realTarget.minus(predictedTurretPos);
+            distance = toTarget.getNorm();
+            timeOfFlight = ShooterConstants.timeOfFlightInterpolation.getPrediction(distance);
+        }
+
+        // 8. FLYWHEEL RPS -> EXIT VELOCITY CONVERSION
+        double wheelDiameterMeters = Units.inchesToMeters(4); // TODO: replace with your actual wheel diameter
+        double efficiency = 0.5; // TODO: tune this on your robot
+        double flywheelRPS = ShooterConstants.shooterSpeedInterpolation.getPrediction(distance);
+        double totalExitVelocity = flywheelRPS * Math.PI * wheelDiameterMeters * efficiency;
+
+        // 9. VECTOR SUBTRACTION FOR AIM
+        // Desired shot velocity toward real target, minus robot velocity
+        double idealHorizontalSpeed = totalExitVelocity * Math.cos(
+                Math.toRadians(ShooterConstants.hoodAngleInterpolation.getPrediction(distance)));
+        Translation2d correctedVector = realTarget.minus(turretPos);
+        double correctedDist = correctedVector.getNorm();
+        Translation2d shotVec = correctedVector.div(correctedDist)
+                .times(idealHorizontalSpeed)
+                .minus(totalVelocity);
+
+        // 10. TURRET ANGLE
+        Rotation2d aimAngle = shotVec.getAngle();
+
+        // 11. BACK-SOLVE FOR HOOD PITCH
+        double newHorizontalSpeed = shotVec.getNorm();
+        double ratio = Math.min(newHorizontalSpeed / totalExitVelocity, 1.0);
+        double newPitch = Math.toDegrees(Math.acos(ratio));
+
+        // 12. DEBUG VISUALIZATION
+        // TheField.getObject("turret pose").setPose(turretPose);
+        // TheField.getObject("corrected shot vector").setPose(
+        // new Pose2d(turretPos.plus(shotVec), aimAngle));
+
+        // 13. RETURN [turretAngle (degrees), hoodPitch (degrees), flywheelRPS]
+        return new double[] {
+                aimAngle.getDegrees(),
+                newPitch,
+                flywheelRPS
+        };
+    }
+
+    // SOTF Solution 2
+    // public double[] SOTFcalc() {
+    // // 1. LATENCY COMP
+    // double latency = 0.15; // Tuned constant
+    // Translation2d futurePos = getTurretPose().getTranslation();
+
+    // // 2. GET TARGET VECTOR
+    // Translation2d goalLocation = DriverStation.getAlliance().get() ==
+    // Alliance.Red ? VisionConstants.RED_HUB_POSE
+    // : VisionConstants.BLUE_HUB_POSE;
+
+    // Translation2d targetVec = goalLocation.minus(futurePos);
+    // double dist = targetVec.getNorm();
+
+    // // 3. CALCULATE IDEAL SHOT (Stationary)
+    // // Note: This returns HORIZONTAL velocity component
+    // double idealHorizontalSpeed =
+    // ShooterConstants.shooterSpeedInterpolation.getPrediction(getDistanceFromHub());
+
+    // // 4. VECTOR SUBTRACTION
+    // Translation2d robotVelVec = new
+    // Translation2d(getState().Speeds.vxMetersPerSecond,
+    // getState().Speeds.vyMetersPerSecond);
+    // Translation2d shotVec =
+    // targetVec.div(dist).times(idealHorizontalSpeed).minus(robotVelVec);
+
+    // // 5. CONVERT TO CONTROLS
+    // double turretAngle = shotVec.getAngle().getDegrees();
+    // double newHorizontalSpeed = shotVec.getNorm();
+
+    // // 6. SOLVE FOR NEW PITCH/RPM
+    // // Assuming constant total exit velocity, variable hood:
+    // double totalExitVelocity = 15.0; // m/s
+    // // Clamp to avoid domain errors if we need more speed than possible
+    // double ratio = Math.min(newHorizontalSpeed / totalExitVelocity, 1.0);
+    // double newPitch = Math.acos(ratio);
+
+    // // 7. SET OUTPUTS
+    // double[] outputs = { turretAngle, Math.toDegrees(newPitch),
+    // ShooterConstants.shooterSpeedInterpolation.getPrediction(dist) };
+    // return outputs;
+    // // turret.setAngle(turretAngle);
+    // // hood.setAngle(Math.toDegrees(newPitch));
+    // // shooter.setRPM(calcRPM(totalExitVelocity));
+
+    // }
 
     public double getDistanceFromHub() {
         double distance = Math.hypot(getXfromHub(), getYfromHub());
