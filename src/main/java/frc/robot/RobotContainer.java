@@ -49,6 +49,7 @@ import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.robot.Robot;
 
 /**
  * This class is where the bulk of the robot should be declared. Since
@@ -83,17 +84,22 @@ public class RobotContainer {
     private final SwerveRequest.SwerveDriveBrake brake = new SwerveRequest.SwerveDriveBrake();
     // private final SwerveRequest.PointWheelsAt point = new
     // SwerveRequest.PointWheelsAt();
+    private double MaxAngularRate = RotationsPerSecond.of(0.75).in(RadiansPerSecond);
 
     // Replace with CommandPS4Controller or CommandJoystick if needed
     private final CommandXboxController driver = new CommandXboxController(OperatorConstants.kDriverControllerPort);
     private final CommandXboxController operator = new CommandXboxController(OperatorConstants.kOperatorControllerPort);
 
+    // Simulation only - second driver controller for testing SOTF
+    private final CommandXboxController driver2 = Robot.isSimulation() ?
+        new CommandXboxController(2) : null;
+
     // drive stuff
-    private double MaxSpeed = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
+    private double MaxSpeed = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond);
     private final Telemetry logger = new Telemetry(MaxSpeed);
     private final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
             .withDeadband(MaxSpeed * 0.1).withRotationalDeadband(MaxAngularRate * 0.1)
-            .withDriveRequestType(DriveRequestType.OpenLoopVoltage); // Use open-loop control for drive
+            .withDriveRequestType(DriveRequestType.OpenLoopVoltage);
 
     private final SwerveRequest.FieldCentricFacingAngle facingAngle = new SwerveRequest.FieldCentricFacingAngle()
             .withDeadband(MaxSpeed * 0.1)
@@ -121,46 +127,44 @@ public class RobotContainer {
      * The container for the robot. Contains subsystems, OI devices, and commands.
      */
     public RobotContainer() {
-        // Configure the trigger bindings
         configureBindings();
         configureNamedCommands();
         configureAutoCommands();
         configureTestCommands();
+
+        if (Robot.isSimulation()) {
+            drivetrain.resetPose(new Pose2d(2, 4, Rotation2d.fromDegrees(0)));
+        }
     }
 
-    /**
-     * Use this method to define your trigger->command mappings. Triggers can be
-     * created via the
-     * {@link Trigger#Trigger(java.util.function.BooleanSupplier)} constructor with
-     * an arbitrary
-     * predicate, or via the named factories in {@link
-     * edu.wpi.first.wpilibj2.command.button.CommandGenericHID}'s subclasses for
-     * {@link
-     * CommandXboxController
-     * Xbox}/{@link edu.wpi.first.wpilibj2.command.button.CommandPS4Controller
-     * PS4} controllers or
-     * {@link edu.wpi.first.wpilibj2.command.button.CommandJoystick Flight
-     * joysticks}.
-     */
     private void configureBindings() {
         drivetrain.registerTelemetry(logger::telemeterize);
 
         /*********** DRIVER ************/
         drivetrain.setDefaultCommand(
-                // Drivetrain will execute this command periodically
-                drivetrain.applyRequest(() -> {
-                    double slowFactor = operator.rightTrigger().getAsBoolean() ? .2 : 1.0;
-                    double slowRotFactor = operator.rightTrigger().getAsBoolean() ? .1 : 1.0;
+            drivetrain.applyRequest(() -> {
+                double leftY = driver.getLeftY();
+                double leftX = driver.getLeftX();
+                double rightX = driver.getRightX();
+                double slowFactor = operator.rightTrigger().getAsBoolean() ? .3 : 1.0;
 
-                    return drive.withVelocityX(-driver.getLeftY() * MaxSpeed * slowFactor) // Drive forward with
-                                                                                           // negative Y (forward)
-                            .withVelocityY(-driver.getLeftX() * MaxSpeed * slowFactor) // Drive left with negative X
-                                                                                       // (left)
-                            .withRotationalRate(-driver.getRightX() * MaxAngularRate * slowRotFactor); // Drive
-                                                                                                       // counterclockwise
-                                                                                                       // with
-                    // negative X (left)
-                }));
+                // Simulation only - driver2 overrides if active
+                if (Robot.isSimulation() && driver2 != null) {
+                    if (Math.abs(driver2.getLeftY()) > 0.1) leftY = driver2.getLeftY();
+                    if (Math.abs(driver2.getLeftX()) > 0.1) leftX = driver2.getLeftX();
+                    if (Math.abs(driver2.getRightX()) > 0.1) rightX = driver2.getRightX();
+                    if (driver2.rightTrigger().getAsBoolean()) slowFactor = 0.5;
+                }
+
+                double simTranslationFactor = Robot.isSimulation() ? 0.3 : 1.0;
+               double rawRotation = rightX;
+
+                return drive
+                    .withVelocityX(-leftY * MaxSpeed * slowFactor * simTranslationFactor)
+                    .withVelocityY(-leftX * MaxSpeed * slowFactor * simTranslationFactor)
+                    .withRotationalRate(-rawRotation * MaxAngularRate * slowFactor);
+            }));
+
         // gyro reset
         driver.start().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
 
@@ -204,6 +208,7 @@ public class RobotContainer {
         driver.leftTrigger()
                 .onTrue(new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.OUTTAKE)))
                 .onFalse(new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.IDLE)));
+
         driver.povUp()
                 .onTrue(
                         new ParallelCommandGroup(
@@ -225,7 +230,6 @@ public class RobotContainer {
 
         /********* OPERATOR *********/
 
-        // operator.start().whileTrue(new HomeIntake(intake));
         // spindexer reverse
         operator.a()
                 .onTrue(new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.FEEDTEST)))
@@ -252,6 +256,7 @@ public class RobotContainer {
                         new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.WAIT)),
                         new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.IDLE)),
                         new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.IDLE))));
+
         // left trench shot
         operator.x()
                 .onTrue(new SequentialCommandGroup(
@@ -280,13 +285,12 @@ public class RobotContainer {
                         new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.WAIT)),
                         new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.IDLE)),
                         new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.IDLE))));
+
         // aiming offset
         operator.povRight()
-                .onTrue(
-                        new InstantCommand(() -> turret.applyLeftOffset()));
+                .onTrue(new InstantCommand(() -> turret.applyLeftOffset()));
         operator.povLeft()
-                .onTrue(
-                        new InstantCommand(() -> turret.applyRightOffset()));
+                .onTrue(new InstantCommand(() -> turret.applyRightOffset()));
 
         // passing
         operator.rightBumper()
@@ -301,21 +305,23 @@ public class RobotContainer {
 
         /******* CONDITIONAL CONTROLS ***********/
 
-        // hubAimLights
-        // .onTrue(new ScrollPattern(normalLights, LEDSubsystem_WPIlib.LEDTarget.SIDES,
-        // LEDPattern.gradient(GradientType.kContinuous, Color.kCadetBlue,
-        // Color.kLightGreen), 2.5))
-        // .onFalse(new ResetLED(normalLights, LEDSubsystem_WPIlib.LEDTarget.SIDES));
-
-        // passsAimLights
-        // .onTrue(new ScrollPattern(normalLights, LEDSubsystem_WPIlib.LEDTarget.SIDES,
-        // LEDPattern.gradient(GradientType.kContinuous, Color.kOrange, Color.kYellow),
-        // 2.5))
-        // .onFalse(new ResetLED(normalLights, LEDSubsystem_WPIlib.LEDTarget.SIDES));
+        // Simulation only - driver2 right trigger triggers shooting like operator
+if (Robot.isSimulation() && driver2 != null) {
+    driver2.rightTrigger()
+        .onTrue(new SequentialCommandGroup(
+                new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.HUB_SHOOT)),
+                new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.AIM_HUB)),
+                new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.SHOOT))))
+        .onFalse(new ParallelCommandGroup(
+                new InstantCommand(() -> shooter.setWantedShooterState(ShooterWantedState.WAIT)),
+                new InstantCommand(() -> turret.setWantedTurretState(TurretWantedState.IDLE)),
+                new InstantCommand(() -> feeder.setWantedFeederState(FeederWantedState.IDLE))));
+}
 
         /* TESTING BUTTONS */
     }
 
+    
     public void disabledActions() {
         feeder.setWantedFeederState(FeederWantedState.IDLE);
         shooter.setWantedShooterState(ShooterWantedState.IDLE);
@@ -331,7 +337,6 @@ public class RobotContainer {
     }
 
     public void LEDSHUTOFF() {
-
         // new DisableLED(normalLights).schedule();
     }
 
@@ -423,7 +428,5 @@ public class RobotContainer {
                 drivetrain.defer(
                         () -> DriveToLocation.pathFindTo(new Pose2d(8.05, 5.25, Rotation2d.fromDegrees(90)),
                                 drivetrain)));
-
     }
-
 }

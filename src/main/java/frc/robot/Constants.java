@@ -65,21 +65,22 @@ public final class Constants {
 
     public static class ShooterConstants {
         public static double hoodConversionRotToDeg = 360 / 129.6;
-        public static double latencyCompensation = .15;
+        public static double latencyCompensation = .20;
         public static double MIN_RPS = 0;
         public static double MAX_RPS = 100;
 
         public static final InterpolatingDoubleTreeMap RPS_MAP = new InterpolatingDoubleTreeMap();
         static {
-            RPS_MAP.put(2.0, 0d);
-            RPS_MAP.put(2.5, 0d);
-            RPS_MAP.put(3.0, 0d);
-            RPS_MAP.put(3.5, 0d);
-            RPS_MAP.put(4.0, 0d);
-            RPS_MAP.put(4.5, 0d);
-            RPS_MAP.put(5.0, 0d);
-            RPS_MAP.put(5.5, 0d);
-            RPS_MAP.put(6.0, 0d);
+            RPS_MAP.put(2.0, 47d);
+           // RPS_MAP.put(2.5, 0d);
+            RPS_MAP.put(3.0, 50d);
+            //RPS_MAP.put(3.5, 0d);
+            RPS_MAP.put(4.0, 52d);
+            //RPS_MAP.put(4.5, 0d);
+            RPS_MAP.put(5.0, 55d);
+            //RPS_MAP.put(5.5, 0d);
+            RPS_MAP.put(6.0, 62d);
+            RPS_MAP.put(10.0, 85d);
         };
 
         public static final InterpolatingDoubleTreeMap REVERSE_RPM_MAP = new InterpolatingDoubleTreeMap();
@@ -98,27 +99,29 @@ public final class Constants {
         public static final InterpolatingDoubleTreeMap HOOD_MAP = new InterpolatingDoubleTreeMap();
         static {
             HOOD_MAP.put(2.0, 0d);
-            HOOD_MAP.put(2.5, 0d);
-            HOOD_MAP.put(3.0, 0d);
-            HOOD_MAP.put(3.5, 0d);
-            HOOD_MAP.put(4.0, 0d);
-            HOOD_MAP.put(4.5, 0d);
-            HOOD_MAP.put(5.0, 0d);
-            HOOD_MAP.put(5.5, 0d);
-            HOOD_MAP.put(6.0, 0d);
+           // HOOD_MAP.put(2.5, 0d);
+            HOOD_MAP.put(3.0, 2.5d);
+            //HOOD_MAP.put(3.5, 0d);
+            HOOD_MAP.put(4.0, 5d);
+            //HOOD_MAP.put(4.5, 0d);
+            HOOD_MAP.put(5.0, 5.5d);
+            //HOOD_MAP.put(5.5, 0d);
+            HOOD_MAP.put(6.0, 6.5d);
+            HOOD_MAP.put(10.0, 8d);
         };
 
         public static final InterpolatingDoubleTreeMap TOF_MAP = new InterpolatingDoubleTreeMap();
         static {
-            TOF_MAP.put(2.0, 0d);
-            TOF_MAP.put(2.5, 0d);
-            TOF_MAP.put(3.0, 0d);
-            TOF_MAP.put(3.5, 0d);
-            TOF_MAP.put(4.0, 0d);
-            TOF_MAP.put(4.5, 0d);
-            TOF_MAP.put(5.0, 0d);
-            TOF_MAP.put(5.5, 0d);
-            TOF_MAP.put(6.0, 0d);
+            TOF_MAP.put(2.0, 0.2);
+            //TOF_MAP.put(2.5, 0d);
+            TOF_MAP.put(3.0, 0.25);
+            //TOF_MAP.put(3.5, 0d);
+            TOF_MAP.put(4.0, 0.3);
+           // TOF_MAP.put(4.5, 0d);
+            TOF_MAP.put(5.0, 0.35);
+           // TOF_MAP.put(5.5, 0d);
+            TOF_MAP.put(6.0, 0.4);
+            TOF_MAP.put(10.0, 0.7);
         };
 
         public static final InterpolatingDoubleTreeMap PASSING_TOF_MAP = new InterpolatingDoubleTreeMap();
@@ -183,11 +186,11 @@ public final class Constants {
                 2);
         public static PolynomialRegression timeOfFlightInterpolation = new PolynomialRegression(
                 Arrays.asList(
-                        new Point(2, .975),
-                        new Point(3, 1.125),
-                        new Point(4, 1.175),
-                        new Point(5, 1.18),
-                        new Point(6, 1.28)),
+                        new Point(2, 0.25),
+                        new Point(3, 0.30),
+                        new Point(4, 0.35),
+                        new Point(5, 0.40),
+                        new Point(6, 0.45)),
                 2);
         public static double distanceToHub;
         public static double passDistance;
@@ -536,10 +539,10 @@ public final class Constants {
         public static Translation2d BLUE_HUB_POSE = new Translation2d(4.62, 4.03); // was 4.03
         public static Translation2d RED_HUB_POSE = new Translation2d(12, 4.03); // was 11.92, 4.03
 
-        public static Translation2d BLUE_PASS_SPOT_1 = new Translation2d(1, 5); // 1
-        public static Translation2d BLUE_PASS_SPOT_2 = new Translation2d(1, 3); // 7
-        public static Translation2d RED_PASS_SPOT_1 = new Translation2d(14.5, 5); // 15.5, 7
-        public static Translation2d RED_PASS_SPOT_2 = new Translation2d(14.5, 3); // 15.5, 1
+        public static Translation2d BLUE_PASS_SPOT_1 = new Translation2d(1, 3); // 1
+        public static Translation2d BLUE_PASS_SPOT_2 = new Translation2d(1, 5); // 7
+        public static Translation2d RED_PASS_SPOT_1 = new Translation2d(14.5, 3); // 15.5, 7
+        public static Translation2d RED_PASS_SPOT_2 = new Translation2d(14.5, 5); // 15.5, 1
 
         public static Map<ScoringZone, Pose2d> scoringZoneLUT = Map.ofEntries(
                 Map.entry(ScoringZone.RED_PASSING_1, new Pose2d(RED_PASS_SPOT_1, new Rotation2d())),

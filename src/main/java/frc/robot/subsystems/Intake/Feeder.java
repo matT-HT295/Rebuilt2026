@@ -1,7 +1,3 @@
-// Copyright (c) FIRST and other WPILib contributors.
-// Open Source Software; you can modify and/or share it under the terms of
-// the WPILib BSD license file in the root directory of this project.
-
 package frc.robot.subsystems.Intake;
 
 import com.ctre.phoenix6.StatusCode;
@@ -10,10 +6,10 @@ import com.ctre.phoenix6.hardware.TalonFX;
 
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Robot;
 import frc.robot.Constants.FeederConstants;
 import frc.robot.Constants.FeederConstants.FeederWantedState;
 import frc.robot.Constants.FeederConstants.SystemState;
-import frc.robot.Constants.IntakeConstants;
 import frc.robot.subsystems.Drive.CommandSwerveDrivetrain;
 import frc.robot.subsystems.Scoring.Shooter;
 import frc.robot.subsystems.Scoring.Turret;
@@ -42,7 +38,6 @@ public class Feeder extends SubsystemBase {
         this.turret = m_turret;
         this.shooter = m_shooter;
         this.drivetrain = m_Drivetrain;
-        /* SETUP CONFIG */
 
         // CURRENT LIMITS
         spindexerMotorConfig.CurrentLimits.SupplyCurrentLimit = FeederConstants.SupplyCurrentLimit;
@@ -50,24 +45,25 @@ public class Feeder extends SubsystemBase {
         towerMotorConfig.CurrentLimits.SupplyCurrentLimit = FeederConstants.SupplyCurrentLimit;
         towerMotorConfig.CurrentLimits.StatorCurrentLimit = FeederConstants.StatorCurrentLimit;
 
-        // APPLY CONFIG TO MOTOR
-        StatusCode status = StatusCode.StatusCodeNotInitialized;
-        for (int i = 0; i < 5; ++i) {
-            status = spindexerMotor.getConfigurator().apply(spindexerMotorConfig);
-            if (status.isOK())
-                break;
-        }
-        if (!status.isOK()) {
-            System.out.println("Could not apply configs, error code: " + status.toString());
-        }
+        if (!Robot.isSimulation()) {
+            StatusCode status = StatusCode.StatusCodeNotInitialized;
+            for (int i = 0; i < 5; ++i) {
+                status = spindexerMotor.getConfigurator().apply(spindexerMotorConfig);
+                if (status.isOK())
+                    break;
+            }
+            if (!status.isOK()) {
+                System.out.println("Could not apply spindexer configs, error code: " + status.toString());
+            }
 
-        for (int i = 0; i < 5; ++i) {
-            status = towerMotor.getConfigurator().apply(towerMotorConfig);
-            if (status.isOK())
-                break;
-        }
-        if (!status.isOK()) {
-            System.out.println("Could not apply configs, error code: " + status.toString());
+            for (int i = 0; i < 5; ++i) {
+                status = towerMotor.getConfigurator().apply(towerMotorConfig);
+                if (status.isOK())
+                    break;
+            }
+            if (!status.isOK()) {
+                System.out.println("Could not apply tower configs, error code: " + status.toString());
+            }
         }
     }
 
@@ -116,6 +112,7 @@ public class Feeder extends SubsystemBase {
                     spindexerMotorSpeed = FeederConstants.feederShootSpeed;
                     towerMotorSpeed = FeederConstants.feederShootSpeed;
                 }
+                break; // fix: was missing break, was falling through to FEEDTESTING
             case FEEDTESTING:
                 spindexerMotorSpeed = -0.7;
                 towerMotorSpeed = -0.7;
@@ -124,37 +121,42 @@ public class Feeder extends SubsystemBase {
     }
 
     public void enableEcoModeFeeder() {
-        towerMotorConfig.CurrentLimits.StatorCurrentLimit = 40;
-        towerMotorConfig.CurrentLimits.SupplyCurrentLimit = 40;
-        towerMotor.getConfigurator().apply(towerMotorConfig);
-        spindexerMotorConfig.CurrentLimits.StatorCurrentLimit = 40;
-        spindexerMotorConfig.CurrentLimits.SupplyCurrentLimit = 40;
-        spindexerMotor.getConfigurator().apply(towerMotorConfig);
+        if (!Robot.isSimulation()) {
+            towerMotorConfig.CurrentLimits.StatorCurrentLimit = 40;
+            towerMotorConfig.CurrentLimits.SupplyCurrentLimit = 40;
+            towerMotor.getConfigurator().apply(towerMotorConfig);
+            spindexerMotorConfig.CurrentLimits.StatorCurrentLimit = 40;
+            spindexerMotorConfig.CurrentLimits.SupplyCurrentLimit = 40;
+            spindexerMotor.getConfigurator().apply(spindexerMotorConfig); // fix: was applying towerMotorConfig
+        }
     }
 
     public void disableEcoModeFeeder() {
-        towerMotorConfig.CurrentLimits.StatorCurrentLimit = FeederConstants.StatorCurrentLimit;
-        towerMotorConfig.CurrentLimits.SupplyCurrentLimit = FeederConstants.SupplyCurrentLimit;
-        towerMotor.getConfigurator().apply(towerMotorConfig);
-        spindexerMotorConfig.CurrentLimits.StatorCurrentLimit = FeederConstants.StatorCurrentLimit;
-        spindexerMotorConfig.CurrentLimits.SupplyCurrentLimit = FeederConstants.SupplyCurrentLimit;
-        spindexerMotor.getConfigurator().apply(towerMotorConfig);
+        if (!Robot.isSimulation()) {
+            towerMotorConfig.CurrentLimits.StatorCurrentLimit = FeederConstants.StatorCurrentLimit;
+            towerMotorConfig.CurrentLimits.SupplyCurrentLimit = FeederConstants.SupplyCurrentLimit;
+            towerMotor.getConfigurator().apply(towerMotorConfig);
+            spindexerMotorConfig.CurrentLimits.StatorCurrentLimit = FeederConstants.StatorCurrentLimit;
+            spindexerMotorConfig.CurrentLimits.SupplyCurrentLimit = FeederConstants.SupplyCurrentLimit;
+            spindexerMotor.getConfigurator().apply(spindexerMotorConfig); // fix: was applying towerMotorConfig
+        }
     }
-
-    /**
-     * Check LoggedTunableNumbers. If changed, update PID and SVA values of motor
-     */
 
     @Override
     public void periodic() {
         SmartDashboard.putString("FEEDER WANTED STATE", wantedState.toString());
         SmartDashboard.putString("FEEDER SYSTEM STATE", systemState.toString());
+        SmartDashboard.putNumber("Spindexer Speed", spindexerMotorSpeed);
+        SmartDashboard.putNumber("Tower Speed", towerMotorSpeed);
+        SmartDashboard.putBoolean("Feeder Shooting", 
+            spindexerMotorSpeed == FeederConstants.feederShootSpeed);
 
         systemState = changeCurrentSystemState();
         applyState();
 
-        spindexerMotor.set(spindexerMotorSpeed);
-        towerMotor.set(towerMotorSpeed);
+        if (!Robot.isSimulation()) {
+            spindexerMotor.set(spindexerMotorSpeed);
+            towerMotor.set(towerMotorSpeed);
+        }
     }
-
 }

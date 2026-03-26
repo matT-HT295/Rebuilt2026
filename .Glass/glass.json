@@ -80,11 +80,6 @@
         "window": {
           "visible": true
         }
-      },
-      "/SmartDashboard/autos": {
-        "window": {
-          "visible": true
-        }
       }
     }
   },
@@ -100,6 +95,9 @@
   "NetworkTables Settings": {
     "mode": "Client (NT4)",
     "serverTeam": "3161",
+    "visible": false
+  },
+  "NetworkTables View": {
     "visible": false
   },
   "Plots": {

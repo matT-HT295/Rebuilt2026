@@ -1,7 +1,3 @@
-// Copyright (c) FIRST and other WPILib contributors.
-// Open Source Software; you can modify and/or share it under the terms of
-// the WPILib BSD license file in the root directory of this project.
-
 package frc.robot.subsystems.Scoring;
 
 import java.util.function.Function;
@@ -21,7 +17,7 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.Constants.FeederConstants;
+import frc.robot.Robot;
 import frc.robot.Constants.ShooterConstants;
 import frc.robot.Constants.ShooterConstants.ShooterWantedState;
 import frc.robot.Constants.ShooterConstants.SystemState;
@@ -48,6 +44,10 @@ public class Shooter extends SubsystemBase {
     private double position = 0.0;
     final PositionVoltage mmE_request = new PositionVoltage(0);
 
+    // sim state
+    private double simShooterVelocity = 0.0;
+    private double simHoodPosition = 0.0;
+
     /* PIDFF CONTROL */
     private LoggedTunableNumber k_S = new LoggedTunableNumber("shooter_s", ShooterConstants.shooterSVA[0]);
     private LoggedTunableNumber k_V = new LoggedTunableNumber("shooter_v", ShooterConstants.shooterSVA[1]);
@@ -63,7 +63,6 @@ public class Shooter extends SubsystemBase {
     /** Creates a new Shooter */
     public Shooter(CommandSwerveDrivetrain m_drivetrain) {
         this.drivetrain = m_drivetrain;
-        /* SETUP CONFIG */
 
         // CURRENT LIMITS
         hoodMotorConfig.CurrentLimits.SupplyCurrentLimit = ShooterConstants.hoodSupplyCurrentLimit;
@@ -72,6 +71,8 @@ public class Shooter extends SubsystemBase {
         shooterMotor2Config.CurrentLimits.StatorCurrentLimit = ShooterConstants.StatorCurrentLimit;
         shooterMotor1Config.CurrentLimits.SupplyCurrentLimit = ShooterConstants.SupplyCurrentLimit;
         shooterMotor1Config.CurrentLimits.StatorCurrentLimit = ShooterConstants.StatorCurrentLimit;
+        shooterMotor2Config.CurrentLimits.SupplyCurrentLimit = ShooterConstants.SupplyCurrentLimit;
+        shooterMotor2Config.CurrentLimits.StatorCurrentLimit = ShooterConstants.StatorCurrentLimit;
 
         // PID CONSTANTS
         hoodMotorConfig.Slot0.kS = ShooterConstants.hoodSVA[0];
@@ -104,49 +105,70 @@ public class Shooter extends SubsystemBase {
 
         shooterMotor1Config.MotionMagic.MotionMagicAcceleration = ShooterConstants.shooterMotionMagicAccel;
         shooterMotor1Config.MotionMagic.MotionMagicJerk = ShooterConstants.shooterMotionMagicJerk;
-
         shooterMotor2Config.MotionMagic.MotionMagicAcceleration = ShooterConstants.shooterMotionMagicAccel;
         shooterMotor2Config.MotionMagic.MotionMagicJerk = ShooterConstants.shooterMotionMagicJerk;
 
-        // use this for motion magic expo (very good control of position)
         hoodMotorConfig.MotionMagic.MotionMagicExpo_kV = ShooterConstants.shooterMotionMagicExpoK_V;
         hoodMotorConfig.MotionMagic.MotionMagicExpo_kA = ShooterConstants.shooterMotionMagicExpoK_A;
 
-        // APPLY CONFIG TO MOTOR
-        StatusCode hoodMotorStatus = StatusCode.StatusCodeNotInitialized;
-        for (int i = 0; i < 5; ++i) {
-            hoodMotorStatus = hoodMotor.getConfigurator().apply(hoodMotorConfig);
-            if (hoodMotorStatus.isOK())
-                break;
-        }
-        if (!hoodMotorStatus.isOK()) {
-            System.out.println(
-                    "Could not apply configs, error code: " + hoodMotorStatus.toString() + hoodMotor.getDeviceID());
-        }
-
-        StatusCode shooterMotor1Status = StatusCode.StatusCodeNotInitialized;
-        for (int i = 0; i < 5; ++i) {
-            shooterMotor1Status = shooterMotor1.getConfigurator().apply(shooterMotor1Config);
-            if (shooterMotor1Status.isOK())
-                break;
-        }
-        if (!shooterMotor1Status.isOK()) {
-            System.out.println("Could not apply configs, error code: " + shooterMotor1Status.toString()
-                    + shooterMotor1.getDeviceID());
-        }
-
-        StatusCode shooterMotor2Status = StatusCode.StatusCodeNotInitialized;
-        for (int i = 0; i < 5; ++i) {
-            shooterMotor2Status = shooterMotor2.getConfigurator().apply(shooterMotor2Config);
-            if (shooterMotor2Status.isOK()) {
-                break;
+        if (!Robot.isSimulation()) {
+            StatusCode hoodMotorStatus = StatusCode.StatusCodeNotInitialized;
+            for (int i = 0; i < 5; ++i) {
+                hoodMotorStatus = hoodMotor.getConfigurator().apply(hoodMotorConfig);
+                if (hoodMotorStatus.isOK())
+                    break;
             }
+            if (!hoodMotorStatus.isOK()) {
+                System.out.println("Could not apply hood configs, error code: "
+                        + hoodMotorStatus.toString() + hoodMotor.getDeviceID());
+            }
+
+            StatusCode shooterMotor1Status = StatusCode.StatusCodeNotInitialized;
+            for (int i = 0; i < 5; ++i) {
+                shooterMotor1Status = shooterMotor1.getConfigurator().apply(shooterMotor1Config);
+                if (shooterMotor1Status.isOK())
+                    break;
+            }
+            if (!shooterMotor1Status.isOK()) {
+                System.out.println("Could not apply shooter1 configs, error code: "
+                        + shooterMotor1Status.toString() + shooterMotor1.getDeviceID());
+            }
+
+            StatusCode shooterMotor2Status = StatusCode.StatusCodeNotInitialized;
+            for (int i = 0; i < 5; ++i) {
+                shooterMotor2Status = shooterMotor2.getConfigurator().apply(shooterMotor2Config);
+                if (shooterMotor2Status.isOK())
+                    break;
+            }
+            if (!shooterMotor2Status.isOK()) {
+                System.out.println("Could not apply shooter2 configs, error code: "
+                        + shooterMotor2Status.toString() + shooterMotor2.getDeviceID());
+            }
+
+            hoodMotor.setPosition(0);
         }
-        if (!shooterMotor2Status.isOK()) {
-            System.out.println("Could not apply configs, error code: " + shooterMotor2Status.toString()
-                    + shooterMotor2.getDeviceID());
+    }
+
+    // Sim safe helpers
+    private double getShooterVelocity() {
+        if (Robot.isSimulation()) {
+            return simShooterVelocity;
         }
-        hoodMotor.setPosition(0);
+        return shooterMotor1.getVelocity().getValueAsDouble();
+    }
+
+    private double getHoodPosition() {
+        if (Robot.isSimulation()) {
+            return simHoodPosition;
+        }
+        return hoodMotor.getPosition().getValueAsDouble();
+    }
+
+    private double getHoodCurrent() {
+        if (Robot.isSimulation()) {
+            return 0.0; // never triggers homing in sim
+        }
+        return hoodMotor.getSupplyCurrent().getValueAsDouble();
     }
 
     public void setWantedShooterState(ShooterWantedState desiredState) {
@@ -154,50 +176,16 @@ public class Shooter extends SubsystemBase {
     }
 
     private SystemState changeCurrentSystemState() {
-        /// DriverStation.getGameSpecificMessage(); DriverStation.getAlliance();
         return switch (wantedState) {
-            case IDLE:
-                yield SystemState.IDLING;
-            case WAIT:
-                yield SystemState.ACTIVE_WAITING;
-            // if(DriverStation.getGameSpecificMessage() == getAlliance()){
-            // if((DriverStation.getMatchTime() <= 105 && DriverStation.getMatchTime() > 80)
-            // || (DriverStation.getMatchTime() <= 55 && DriverStation.getMatchTime() >
-            // 30)){
-            // yield SystemState.ACTIVE_WAITING;
-            // }
-            // if((DriverStation.getMatchTime() <= 130 && DriverStation.getMatchTime() >
-            // 105) || (DriverStation.getMatchTime() <= 80 && DriverStation.getMatchTime() >
-            // 55)){
-            // yield SystemState.INACTIVE_WAITING;
-            // }
-            // }
-            // else{
-            // if((DriverStation.getMatchTime() <= 130 && DriverStation.getMatchTime() >
-            // 105) || (DriverStation.getMatchTime() <= 80 && DriverStation.getMatchTime() >
-            // 55)){
-            // yield SystemState.ACTIVE_WAITING;
-            // }
-            // if((DriverStation.getMatchTime() <= 105 && DriverStation.getMatchTime() > 80)
-            // || (DriverStation.getMatchTime() <= 55 && DriverStation.getMatchTime() >
-            // 30)){
-            // yield SystemState.INACTIVE_WAITING;
-            // }
-            // }
-            case TRENCH_SHOOT:
-                yield SystemState.TRENCH_SHOOTING;
-            case PASS_SHOOT:
-                yield SystemState.PASS_SHOOTING;
-            case HUB_SHOOT:
-                yield SystemState.HUB_SHOOTING;
-            case HOME:
-                yield SystemState.HOMING;
-            case TEST:
-                yield SystemState.TESTING;
-            case RETRACT_AUTO:
-                yield SystemState.RETRACTING_AUTO;
-            case TURN_ON_AUTO:
-                yield SystemState.TURNING_ON_AUTO;
+            case IDLE -> SystemState.IDLING;
+            case WAIT -> SystemState.ACTIVE_WAITING;
+            case TRENCH_SHOOT -> SystemState.TRENCH_SHOOTING;
+            case PASS_SHOOT -> SystemState.PASS_SHOOTING;
+            case HUB_SHOOT -> SystemState.HUB_SHOOTING;
+            case HOME -> SystemState.HOMING;
+            case TEST -> SystemState.TESTING;
+            case RETRACT_AUTO -> SystemState.RETRACTING_AUTO;
+            case TURN_ON_AUTO -> SystemState.TURNING_ON_AUTO;
         };
     }
 
@@ -256,97 +244,99 @@ public class Shooter extends SubsystemBase {
                 // ShotCalc2.calculateSOTF(drivetrain);
                 // position = values.hoodAngle();
                 // motorspeed = values.RPS();
+                motorspeed = drivetrain.currentShotCommand.RPS();
+                position = MathUtil.clamp(drivetrain.currentShotCommand.hoodAngle(), -0.5, 8);
                 break;
             case PASS_SHOOTING:
-                Translation2d correctedVector2 = drivetrain.getSOTFTurretAngle();
-                double correctedDistance2 = correctedVector2.getNorm();
-
-                position = MathUtil.clamp(
-                        ShooterConstants.hoodAngleInterpolation.getPrediction(correctedDistance2),
-                        -.5,
-                        8);
-
-                motorspeed = ShooterConstants.shooterSpeedInterpolation
-                        .getPrediction(correctedDistance2);
+                motorspeed = drivetrain.currentShotCommand.RPS();
+                position = MathUtil.clamp(drivetrain.currentShotCommand.hoodAngle(), -0.5, 8);
                 break;
             case HOMING:
-                position = -.1;
-                if (hoodMotor.getSupplyCurrent().getValueAsDouble() >= ShooterConstants.homingThreshold) {
-                    hoodMotor.setPosition(0);
+                position = -0.1;
+                if (getHoodCurrent() >= ShooterConstants.homingThreshold) {
+                    if (!Robot.isSimulation()) {
+                        hoodMotor.setPosition(0);
+                    }
+                    simHoodPosition = 0.0;
                     position = 0;
+                    setWantedShooterState(ShooterWantedState.IDLE);
                 }
-                setWantedShooterState(ShooterWantedState.IDLE);
                 break;
             case TESTING:
-                // change these to find interpolation values
                 motorspeed = 95;
                 position = 7.5;
                 break;
             case RETRACTING_AUTO:
                 position = 0;
+                break; // fix: was falling through to TURNING_ON_AUTO
             case TURNING_ON_AUTO:
                 motorspeed = 50;
+                break;
         }
     }
 
-    /**
-     * Check LoggedTunableNumbers. If changed, update PID and SVA values of motor
-     */
     public void checkTunableValues() {
+        if (!Robot.isSimulation()) {
+            if (k_S.hasChanged() || k_V.hasChanged() || k_A.hasChanged()
+                    || k_P.hasChanged() || k_I.hasChanged() || k_D.hasChanged()) {
+                shooterMotor1Config.Slot0.kS = k_S.get();
+                shooterMotor1Config.Slot0.kV = k_V.get();
+                shooterMotor1Config.Slot0.kA = k_A.get();
+                shooterMotor1Config.Slot0.kP = k_P.get();
+                shooterMotor1Config.Slot0.kI = k_I.get();
+                shooterMotor1Config.Slot0.kD = k_D.get();
 
-        if (k_S.hasChanged() || k_V.hasChanged() || k_A.hasChanged()
-                || k_P.hasChanged() || k_I.hasChanged() || k_D.hasChanged()) {
-            shooterMotor1Config.Slot0.kS = k_S.get();
-            shooterMotor1Config.Slot0.kV = k_V.get();
-            shooterMotor1Config.Slot0.kA = k_A.get();
-            shooterMotor1Config.Slot0.kP = k_P.get();
-            shooterMotor1Config.Slot0.kI = k_I.get();
-            shooterMotor1Config.Slot0.kD = k_D.get();
+                shooterMotor2Config.Slot0.kS = k_S.get();
+                shooterMotor2Config.Slot0.kV = k_V.get();
+                shooterMotor2Config.Slot0.kA = k_A.get();
+                shooterMotor2Config.Slot0.kP = k_P.get();
+                shooterMotor2Config.Slot0.kI = k_I.get();
+                shooterMotor2Config.Slot0.kD = k_D.get();
 
-            shooterMotor2Config.Slot0.kS = k_S.get();
-            shooterMotor2Config.Slot0.kV = k_V.get();
-            shooterMotor2Config.Slot0.kA = k_A.get();
-            shooterMotor2Config.Slot0.kP = k_P.get();
-            shooterMotor2Config.Slot0.kI = k_I.get();
-            shooterMotor2Config.Slot0.kD = k_D.get();
-
+                shooterMotor1.getConfigurator().apply(shooterMotor1Config);
+                shooterMotor2.getConfigurator().apply(shooterMotor2Config);
+            }
         }
     }
 
     public boolean shooterIsReady() {
-        if (Math.abs(shooterMotor1.getVelocity().getValueAsDouble() - motorspeed) < 1.5) {
-            return true;
-        } else {
-            return false;
-        }
+        return Math.abs(getShooterVelocity() - motorspeed) < 1.5;
     }
 
     public void enableEcoModeShooter() {
-        shooterMotor1Config.CurrentLimits.StatorCurrentLimit = 40;
-        shooterMotor1Config.CurrentLimits.SupplyCurrentLimit = 40;
-        shooterMotor1.getConfigurator().apply(shooterMotor1Config);
-        shooterMotor2Config.CurrentLimits.StatorCurrentLimit = 40;
-        shooterMotor2Config.CurrentLimits.SupplyCurrentLimit = 40;
-        shooterMotor2.getConfigurator().apply(shooterMotor2Config);
+        if (!Robot.isSimulation()) {
+            shooterMotor1Config.CurrentLimits.StatorCurrentLimit = 40;
+            shooterMotor1Config.CurrentLimits.SupplyCurrentLimit = 40;
+            shooterMotor1.getConfigurator().apply(shooterMotor1Config);
+            shooterMotor2Config.CurrentLimits.StatorCurrentLimit = 40;
+            shooterMotor2Config.CurrentLimits.SupplyCurrentLimit = 40;
+            shooterMotor2.getConfigurator().apply(shooterMotor2Config);
+        }
     }
 
     public void disableEcoModeShooter() {
-        shooterMotor1Config.CurrentLimits.StatorCurrentLimit = ShooterConstants.StatorCurrentLimit;
-        shooterMotor1Config.CurrentLimits.SupplyCurrentLimit = ShooterConstants.SupplyCurrentLimit;
-        shooterMotor1.getConfigurator().apply(shooterMotor1Config);
-        shooterMotor2Config.CurrentLimits.StatorCurrentLimit = ShooterConstants.StatorCurrentLimit;
-        shooterMotor2Config.CurrentLimits.SupplyCurrentLimit = ShooterConstants.SupplyCurrentLimit;
-        shooterMotor2.getConfigurator().apply(shooterMotor2Config);
+        if (!Robot.isSimulation()) {
+            shooterMotor1Config.CurrentLimits.StatorCurrentLimit = ShooterConstants.StatorCurrentLimit;
+            shooterMotor1Config.CurrentLimits.SupplyCurrentLimit = ShooterConstants.SupplyCurrentLimit;
+            shooterMotor1.getConfigurator().apply(shooterMotor1Config);
+            shooterMotor2Config.CurrentLimits.StatorCurrentLimit = ShooterConstants.StatorCurrentLimit;
+            shooterMotor2Config.CurrentLimits.SupplyCurrentLimit = ShooterConstants.SupplyCurrentLimit;
+            shooterMotor2.getConfigurator().apply(shooterMotor2Config);
+        }
     }
 
     private void logValues() {
-        SmartDashboard.putNumber("Shooter Actual Speed", shooterMotor1.getVelocity().getValueAsDouble());
-        // SmartDashboard.putNumber("Hood Wanted Position", position);
-        SmartDashboard.putNumber("Hood Actual Position", hoodMotor.getPosition().getValueAsDouble());
+        SmartDashboard.putNumber("Shooter Actual Speed", getShooterVelocity());
+        SmartDashboard.putNumber("Hood Actual Position", getHoodPosition());
         SmartDashboard.putNumber("Shooter Wanted Speed", motorspeed);
-        SmartDashboard.putNumber("Hood Motor Current", hoodMotor.getSupplyCurrent().getValueAsDouble());
+        SmartDashboard.putNumber("Hood Wanted Position", position);
+        SmartDashboard.putBoolean("Shooter Is Ready", shooterIsReady());
         SmartDashboard.putString("SHOOTER WANTED STATE", wantedState.toString());
         SmartDashboard.putString("SHOOTER SYSTEM STATE", systemState.toString());
+
+        if (!Robot.isSimulation()) {
+            SmartDashboard.putNumber("Hood Motor Current", getHoodCurrent());
+        }
     }
 
     @Override
@@ -354,14 +344,15 @@ public class Shooter extends SubsystemBase {
         logValues();
         systemState = changeCurrentSystemState();
         applyState();
-        // example of how to control motor for position
-        hoodMotor.setControl(mmE_request.withPosition(position));
-        // example of how to control motor for velocity
-        shooterMotor1.setControl(mm_request.withVelocity(motorspeed));
-        shooterMotor2.setControl(mm_request.withVelocity(motorspeed));
-        // shooterMotor1.set(motorspeed);
-        // shooterMotor2.set(motorspeed);
 
+        if (Robot.isSimulation()) {
+            // In simulation, shooter and hood instantly reach setpoint
+            simShooterVelocity = motorspeed;
+            simHoodPosition = position;
+        } else {
+            hoodMotor.setControl(mmE_request.withPosition(position));
+            shooterMotor1.setControl(mm_request.withVelocity(motorspeed));
+            shooterMotor2.setControl(mm_request.withVelocity(motorspeed));
+        }
     }
-
 }
