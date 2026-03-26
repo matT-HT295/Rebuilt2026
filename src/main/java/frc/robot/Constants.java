@@ -112,16 +112,16 @@ public final class Constants {
 
         public static final InterpolatingDoubleTreeMap TOF_MAP = new InterpolatingDoubleTreeMap();
         static {
-            TOF_MAP.put(2.0, 0.3);
+            TOF_MAP.put(2.0, 0.2);
             //TOF_MAP.put(2.5, 0d);
-            TOF_MAP.put(3.0, 0.35);
+            TOF_MAP.put(3.0, 0.25);
             //TOF_MAP.put(3.5, 0d);
-            TOF_MAP.put(4.0, 0.4);
+            TOF_MAP.put(4.0, 0.3);
            // TOF_MAP.put(4.5, 0d);
-            TOF_MAP.put(5.0, 0.45);
+            TOF_MAP.put(5.0, 0.35);
            // TOF_MAP.put(5.5, 0d);
-            TOF_MAP.put(6.0, 0.5);
-            TOF_MAP.put(10.0, 0.8);
+            TOF_MAP.put(6.0, 0.4);
+            TOF_MAP.put(10.0, 0.7);
         };
 
         public static double activeWaitingSpeed = 30;

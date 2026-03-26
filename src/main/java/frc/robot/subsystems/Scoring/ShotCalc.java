@@ -23,7 +23,7 @@ public final class ShotCalc {
             Translation2d goalPosition) {
 
         // 1. LOW-PASS FILTER on translational velocity
-        double alpha = 0.0;
+        double alpha = 1.0;
         filteredSpeeds.vxMetersPerSecond = alpha * rawFieldSpeeds.vxMetersPerSecond
                 + (1 - alpha) * filteredSpeeds.vxMetersPerSecond;
         filteredSpeeds.vyMetersPerSecond = alpha * rawFieldSpeeds.vyMetersPerSecond

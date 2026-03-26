@@ -135,7 +135,7 @@ public class RobotContainer {
                 double leftY = driver.getLeftY();
                 double leftX = driver.getLeftX();
                 double rightX = driver.getRightX();
-                double slowFactor = operator.rightTrigger().getAsBoolean() ? .5 : 1.0;
+                double slowFactor = operator.rightTrigger().getAsBoolean() ? .3 : 1.0;
 
                 // Simulation only - driver2 overrides if active
                 if (Robot.isSimulation() && driver2 != null) {
@@ -145,7 +145,7 @@ public class RobotContainer {
                     if (driver2.rightTrigger().getAsBoolean()) slowFactor = 0.5;
                 }
 
-                double simTranslationFactor = Robot.isSimulation() ? 0.5 : 1.0;
+                double simTranslationFactor = Robot.isSimulation() ? 0.3 : 1.0;
                double rawRotation = rightX;
 
                 return drive

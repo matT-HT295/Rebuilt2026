@@ -288,7 +288,7 @@ public class Turret extends SubsystemBase {
             // In simulation, turret instantly reaches setpoint
             simTurretPosition = position;
         } else {
-            turretMotor.setControl(mmE_request.withPosition(position));
+            turretMotor.setControl(mmE_request.withPosition(position).withFeedForward(-drivetrain.getState().Speeds.omegaRadiansPerSecond));
         }
     }
 }
