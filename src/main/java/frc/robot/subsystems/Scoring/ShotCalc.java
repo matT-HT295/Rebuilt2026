@@ -5,6 +5,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import frc.robot.Constants.ShooterConstants;
+import frc.robot.Constants.ShooterConstants.SystemState;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 // option 3
@@ -43,18 +44,19 @@ public final class ShotCalc {
                 filteredSpeeds.vxMetersPerSecond,
                 filteredSpeeds.vyMetersPerSecond).plus(rotationalVelocity);
 
-SmartDashboard.putNumber("Rotational Vel X", rotationalVelocity.getX());
-SmartDashboard.putNumber("Rotational Vel Y", rotationalVelocity.getY());
-SmartDashboard.putNumber("Translational Vel X", filteredSpeeds.vxMetersPerSecond);
-SmartDashboard.putNumber("Translational Vel Y", filteredSpeeds.vyMetersPerSecond);
-SmartDashboard.putNumber("Total Vel X", totalVelocity.getX());
-SmartDashboard.putNumber("Total Vel Y", totalVelocity.getY());
+        SmartDashboard.putNumber("SOTF/Rotational Vel X", rotationalVelocity.getX());
+        SmartDashboard.putNumber("SOTF/Rotational Vel Y", rotationalVelocity.getY());
+        SmartDashboard.putNumber("SOTF/Translational Vel X", filteredSpeeds.vxMetersPerSecond);
+        SmartDashboard.putNumber("SOTF/Translational Vel Y", filteredSpeeds.vyMetersPerSecond);
+        SmartDashboard.putNumber("SOTF/Total Vel X", totalVelocity.getX());
+        SmartDashboard.putNumber("SOTF/Total Vel Y", totalVelocity.getY());
 
         // 4. NULL SAFETY — too close to target
         Translation2d toGoal = goalPosition.minus(turretPosition);
-        double distance = toGoal.getNorm();{
-        if (distance < 0.5) // If we're within 0.5m of the goal, SOTF isn't reliable
-            return new ShooterCommand(0, new Rotation2d(), 0);
+        double distance = toGoal.getNorm();
+        {
+            if (distance < 0.5) // If we're within 0.5m of the goal, SOTF isn't reliable
+                return new ShooterCommand(0, new Rotation2d(), 0);
         }
 
         // 5. INITIAL TABLE LOOKUPS at real distance
@@ -62,7 +64,8 @@ SmartDashboard.putNumber("Total Vel Y", totalVelocity.getY());
         Translation2d virtualTarget = goalPosition;
 
         // 6. ITERATIVE SOLVE (20 passes)
-        // Resolves circular dependency: distance -> TOF -> corrected aim -> new distance
+        // Resolves circular dependency: distance -> TOF -> corrected aim -> new
+        // distance
         for (int i = 0; i < 20; i++) {
             // Where will the turret be when the ball arrives
             Translation2d predictedTurretPos = turretPosition.plus(totalVelocity.times(timeOfFlight));
@@ -77,9 +80,18 @@ SmartDashboard.putNumber("Total Vel Y", totalVelocity.getY());
         }
 
         // 7. FINAL TABLE LOOKUPS at corrected distance
+
         double baselineRPS = ShooterConstants.RPS_MAP.get(distance);
         double baselineHoodAngle = ShooterConstants.HOOD_MAP.get(distance);
         double baselineVelocity = distance / timeOfFlight;
+
+        if (Shooter.getState() == SystemState.HUB_SHOOTING) {
+            baselineRPS = ShooterConstants.RPS_MAP.get(distance);
+            baselineHoodAngle = ShooterConstants.HOOD_MAP.get(distance);
+        } else if (Shooter.getState() == SystemState.PASS_SHOOTING) {
+            baselineRPS = ShooterConstants.PASSING_RPS_MAP.get(distance);
+            baselineHoodAngle = ShooterConstants.PASSING_HOOD_MAP.get(distance);
+        }
 
         // 8. VECTOR SUBTRACTION FOR AIM
         // Desired shot velocity toward virtual target, minus robot velocity
@@ -104,9 +116,7 @@ SmartDashboard.putNumber("Total Vel Y", totalVelocity.getY());
         double adjustedHood = baselineHoodAngle;
 
         return new ShooterCommand(adjustedRPS, turretAngle, adjustedHood);
-        
 
-        
     }
 
 }

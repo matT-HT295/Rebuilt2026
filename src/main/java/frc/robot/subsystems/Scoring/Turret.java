@@ -183,13 +183,13 @@ public class Turret extends SubsystemBase {
                 // Rotation2d angleToHub2 = Rotation2d.fromDegrees(drivetrain.SOTFcalc()[0]);
 
                 /* OPTION 3 */
-                ChassisSpeeds rawFieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
-                        drivetrain.getState().Speeds,
-                        drivetrain.getPose().getRotation());
-                Rotation2d angleToHub2 = (ShotCalc.calculateSOTF(
-                        drivetrain.getTurretPose().getTranslation(),
-                        rawFieldSpeeds, drivetrain.getScoringLocation(),
-                        ShooterConstants.latencyCompensation).turretAngle());
+                // ChassisSpeeds rawFieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
+                // drivetrain.getState().Speeds,
+                // drivetrain.getPose().getRotation());
+                // Rotation2d angleToHub2 = (ShotCalc.calculateSOTF(
+                // drivetrain.getTurretPose().getTranslation(),
+                // rawFieldSpeeds, drivetrain.getScoringLocation(),
+                // ShooterConstants.latencyCompensation).turretAngle());
 
                 /* OPTION 4 */
                 // Rotation2d angleToHub2 = ShotCalc2.calculateSOTF(drivetrain).turretAngle();
@@ -199,7 +199,7 @@ public class Turret extends SubsystemBase {
                 // drivetrain.getXfromHub()));
 
                 // calculate desired angle of turret relative to robot
-                Rotation2d desiredTurretAngle2 = (angleToHub2)
+                // Rotation2d desiredTurretAngle2 = (angleToHub2)
 
                 double dt2 = Timer.getFPGATimestamp() - drivetrain.shotCommandTimestamp;
                 double omegaRad2 = drivetrain.getState().Speeds.omegaRadiansPerSecond;
@@ -281,26 +281,27 @@ public class Turret extends SubsystemBase {
     }
 
     private void logValues() {
-        SmartDashboard.putNumber("Turret Position", getTurretPosition());
-        SmartDashboard.putNumber("Turret Wanted Position", position);
-        SmartDashboard.putNumber("Turret Offset", offset);
-        SmartDashboard.putBoolean("Turret Is Ready", turretIsReady());
-        SmartDashboard.putString("TURRET WANTED STATE", wantedState.toString());
-        SmartDashboard.putString("TURRET SYSTEM STATE", systemState.toString());
-        SmartDashboard.putNumber("Shot Command Angle", drivetrain.currentShotCommand.turretAngle().getDegrees());
-        SmartDashboard.putNumber("Shot Command RPS", drivetrain.currentShotCommand.RPS());
-        SmartDashboard.putNumber("Shot Command Hood", drivetrain.currentShotCommand.hoodAngle());
-        SmartDashboard.putNumber("Rotation Correction Deg", Math.toDegrees(
-                    drivetrain.getState().Speeds.omegaRadiansPerSecond *
-                    (Timer.getFPGATimestamp() - drivetrain.shotCommandTimestamp)));
-        SmartDashboard.putNumber("Robot Angle Deg", drivetrain.getPose().getRotation().getDegrees());
-        SmartDashboard.putNumber("Turret Field X", drivetrain.getCurrentTurretPose().getX());
-        SmartDashboard.putNumber("Turret Field Y", drivetrain.getCurrentTurretPose().getY());
+        SmartDashboard.putNumber("TURRET/Turret Position", getTurretPosition());
+        SmartDashboard.putNumber("TURRET/Turret Wanted Position", position);
+        SmartDashboard.putNumber("TURRET/Turret Offset", offset);
+        SmartDashboard.putBoolean("TURRET/Turret Is Ready", turretIsReady());
+        SmartDashboard.putString("STATE/TURRET WANTED STATE", wantedState.toString());
+        SmartDashboard.putString("STATE/TURRET SYSTEM STATE", systemState.toString());
+        SmartDashboard.putNumber("SOTF/Shot Command Angle", drivetrain.currentShotCommand.turretAngle().getDegrees());
+        SmartDashboard.putNumber("SOTF/Shot Command RPS", drivetrain.currentShotCommand.RPS());
+        SmartDashboard.putNumber("SOTF/Shot Command Hood", drivetrain.currentShotCommand.hoodAngle());
+        SmartDashboard.putNumber("SOTF/Rotation Correction Deg", Math.toDegrees(
+                drivetrain.getState().Speeds.omegaRadiansPerSecond *
+                        (Timer.getFPGATimestamp() - drivetrain.shotCommandTimestamp)));
+        SmartDashboard.putNumber("SOTF/Robot Angle Deg", drivetrain.getPose().getRotation().getDegrees());
+        SmartDashboard.putNumber("SOTF/Turret Field X", drivetrain.getCurrentTurretPose().getX());
+        SmartDashboard.putNumber("SOTF/Turret Field Y", drivetrain.getCurrentTurretPose().getY());
 
         if (!Robot.isSimulation()) {
-            SmartDashboard.putNumber("Turret Absolute Position", encoder.getAbsolutePosition().getValueAsDouble());
-            SmartDashboard.putNumber("Turret Motor Position", turretMotor.getPosition().getValueAsDouble());
-            SmartDashboard.putNumber("Turret Encoder Position", encoder.getPosition().getValueAsDouble());
+            SmartDashboard.putNumber("TURRET/Turret Absolute Position",
+                    encoder.getAbsolutePosition().getValueAsDouble());
+            SmartDashboard.putNumber("TURRET/Turret Motor Position", turretMotor.getPosition().getValueAsDouble());
+            SmartDashboard.putNumber("TURRET/Turret Encoder Position", encoder.getPosition().getValueAsDouble());
         }
     }
 
@@ -314,7 +315,8 @@ public class Turret extends SubsystemBase {
             // In simulation, turret instantly reaches setpoint
             simTurretPosition = position;
         } else {
-            turretMotor.setControl(mmE_request.withPosition(position).withFeedForward(-drivetrain.getState().Speeds.omegaRadiansPerSecond));
+            turretMotor.setControl(mmE_request.withPosition(position)
+                    .withFeedForward(-drivetrain.getState().Speeds.omegaRadiansPerSecond));
         }
     }
 }

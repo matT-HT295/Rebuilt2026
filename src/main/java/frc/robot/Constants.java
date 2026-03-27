@@ -72,13 +72,13 @@ public final class Constants {
         public static final InterpolatingDoubleTreeMap RPS_MAP = new InterpolatingDoubleTreeMap();
         static {
             RPS_MAP.put(2.0, 47d);
-           // RPS_MAP.put(2.5, 0d);
+            // RPS_MAP.put(2.5, 0d);
             RPS_MAP.put(3.0, 50d);
-            //RPS_MAP.put(3.5, 0d);
+            // RPS_MAP.put(3.5, 0d);
             RPS_MAP.put(4.0, 52d);
-            //RPS_MAP.put(4.5, 0d);
+            // RPS_MAP.put(4.5, 0d);
             RPS_MAP.put(5.0, 55d);
-            //RPS_MAP.put(5.5, 0d);
+            // RPS_MAP.put(5.5, 0d);
             RPS_MAP.put(6.0, 62d);
             RPS_MAP.put(10.0, 85d);
         };
@@ -99,13 +99,13 @@ public final class Constants {
         public static final InterpolatingDoubleTreeMap HOOD_MAP = new InterpolatingDoubleTreeMap();
         static {
             HOOD_MAP.put(2.0, 0d);
-           // HOOD_MAP.put(2.5, 0d);
+            // HOOD_MAP.put(2.5, 0d);
             HOOD_MAP.put(3.0, 2.5d);
-            //HOOD_MAP.put(3.5, 0d);
+            // HOOD_MAP.put(3.5, 0d);
             HOOD_MAP.put(4.0, 5d);
-            //HOOD_MAP.put(4.5, 0d);
+            // HOOD_MAP.put(4.5, 0d);
             HOOD_MAP.put(5.0, 5.5d);
-            //HOOD_MAP.put(5.5, 0d);
+            // HOOD_MAP.put(5.5, 0d);
             HOOD_MAP.put(6.0, 6.5d);
             HOOD_MAP.put(10.0, 8d);
         };
@@ -113,13 +113,13 @@ public final class Constants {
         public static final InterpolatingDoubleTreeMap TOF_MAP = new InterpolatingDoubleTreeMap();
         static {
             TOF_MAP.put(2.0, 0.2);
-            //TOF_MAP.put(2.5, 0d);
+            // TOF_MAP.put(2.5, 0d);
             TOF_MAP.put(3.0, 0.25);
-            //TOF_MAP.put(3.5, 0d);
+            // TOF_MAP.put(3.5, 0d);
             TOF_MAP.put(4.0, 0.3);
-           // TOF_MAP.put(4.5, 0d);
+            // TOF_MAP.put(4.5, 0d);
             TOF_MAP.put(5.0, 0.35);
-           // TOF_MAP.put(5.5, 0d);
+            // TOF_MAP.put(5.5, 0d);
             TOF_MAP.put(6.0, 0.4);
             TOF_MAP.put(10.0, 0.7);
         };

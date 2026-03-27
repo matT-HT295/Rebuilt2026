@@ -68,11 +68,11 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         return this.getState().Pose;
     }
 
-//    private final StructArrayPublisher<Pose3d> trajectoryPublisher = 
-//     NetworkTableInstance.getDefault()
-//         .getTable("SmartDashboard")
-//         .getStructArrayTopic("ball trajectory 3d", Pose3d.struct)
-//         .publish();
+    // private final StructArrayPublisher<Pose3d> trajectoryPublisher =
+    // NetworkTableInstance.getDefault()
+    // .getTable("SmartDashboard")
+    // .getStructArrayTopic("ball trajectory 3d", Pose3d.struct)
+    // .publish();
 
     public Translation2d getScoringLocation() {
         Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
@@ -81,9 +81,9 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
                 return FieldConstants.BLUE_HUB_POSE;
             } else {
                 if (4.03 < getPose().getY()) {
-                    return FieldConstants.BLUE_PASS_SPOT_2;
-                } else {
                     return FieldConstants.BLUE_PASS_SPOT_1;
+                } else {
+                    return FieldConstants.BLUE_PASS_SPOT_2;
                 }
             }
         } else {
@@ -91,9 +91,9 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
                 return FieldConstants.RED_HUB_POSE;
             } else {
                 if (4.03 < getPose().getY()) {
-                    return FieldConstants.RED_PASS_SPOT_2;
-                } else {
                     return FieldConstants.RED_PASS_SPOT_1;
+                } else {
+                    return FieldConstants.RED_PASS_SPOT_2;
                 }
             }
         }
@@ -120,163 +120,167 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
         return futurePose;
     }
-    
-    private final StructArrayPublisher<Pose3d> trajectoryPublisher =
-    NetworkTableInstance.getDefault()
-        .getTable("SmartDashboard")
-        .getStructArrayTopic("ball trajectory 3d", Pose3d.struct)
-        .publish();
 
-private void updateBallTrajectory() {
-    if (!Robot.isSimulation()) return;
+    private final StructArrayPublisher<Pose3d> trajectoryPublisher = NetworkTableInstance.getDefault()
+            .getTable("SmartDashboard")
+            .getStructArrayTopic("ball trajectory 3d", Pose3d.struct)
+            .publish();
 
-    Translation2d turretPos = getCurrentTurretPose().getTranslation();
-    double distance = getDistanceFromHub();
-    double tof = ShooterConstants.timeOfFlightInterpolation.getPrediction(distance);
+    private void updateBallTrajectory() {
+        if (!Robot.isSimulation())
+            return;
 
-    double hoodAngleDeg = ShooterConstants.HOOD_MAP.get(distance)
-        * ShooterConstants.hoodConversionRotToDeg;
-    double hoodHomeAngle = 18.0;
-    double launchAngleRad = Math.toRadians(90.0 - (hoodHomeAngle + hoodAngleDeg));
+        Translation2d turretPos = getCurrentTurretPose().getTranslation();
+        double distance = getDistanceFromHub();
+        double tof = ShooterConstants.timeOfFlightInterpolation.getPrediction(distance);
 
-    double flywheelSurfaceSpeed = currentShotCommand.RPS() * Math.PI * (4 * 0.0254);
-    double exitSpeed = flywheelSurfaceSpeed * 0.45;
-    double horizontalSpeed = exitSpeed * Math.cos(launchAngleRad);
-    double verticalSpeed = exitSpeed * Math.sin(launchAngleRad);
+        double hoodAngleDeg = ShooterConstants.HOOD_MAP.get(distance)
+                * ShooterConstants.hoodConversionRotToDeg;
+        double hoodHomeAngle = 18.0;
+        double launchAngleRad = Math.toRadians(90.0 - (hoodHomeAngle + hoodAngleDeg));
 
-    ChassisSpeeds fieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
-        getState().Speeds, getPose().getRotation());
-    Translation2d virtualTarget = getScoringLocation().minus(
-        new Translation2d(fieldSpeeds.vxMetersPerSecond, fieldSpeeds.vyMetersPerSecond)
-        .times(tof));
+        double flywheelSurfaceSpeed = currentShotCommand.RPS() * Math.PI * (4 * 0.0254);
+        double exitSpeed = flywheelSurfaceSpeed * 0.45;
+        double horizontalSpeed = exitSpeed * Math.cos(launchAngleRad);
+        double verticalSpeed = exitSpeed * Math.sin(launchAngleRad);
 
-    double dx = virtualTarget.getX() - turretPos.getX();
-    double dy = virtualTarget.getY() - turretPos.getY();
-    double horizontalDist = Math.sqrt(dx * dx + dy * dy);
-    if (horizontalDist < 0.01) return;
+        ChassisSpeeds fieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
+                getState().Speeds, getPose().getRotation());
+        Translation2d virtualTarget = getScoringLocation().minus(
+                new Translation2d(fieldSpeeds.vxMetersPerSecond, fieldSpeeds.vyMetersPerSecond)
+                        .times(tof));
 
-    double vx = (dx / horizontalDist) * horizontalSpeed;
-double vy = (dy / horizontalDist) * horizontalSpeed;
+        double dx = virtualTarget.getX() - turretPos.getX();
+        double dy = virtualTarget.getY() - turretPos.getY();
+        double horizontalDist = Math.sqrt(dx * dx + dy * dy);
+        if (horizontalDist < 0.01)
+            return;
 
-    double launchHeight = 0.46;
-    double g = 9.81;
-    int steps = 20;
-    double[] arr = new double[steps * 3];
-    int count = 0;
+        double vx = (dx / horizontalDist) * horizontalSpeed;
+        double vy = (dy / horizontalDist) * horizontalSpeed;
 
-    // THIS LOOP WAS MISSING - fills arr with trajectory points
-   // Use time to hit ground, not TOF to goal
-double timeToGround = (verticalSpeed + Math.sqrt(verticalSpeed * verticalSpeed + 2 * g * launchHeight)) / g;
+        double launchHeight = 0.46;
+        double g = 9.81;
+        int steps = 20;
+        double[] arr = new double[steps * 3];
+        int count = 0;
 
-for (int i = 0; i < steps; i++) {
-    double t = (timeToGround / steps) * i;
-    double x = turretPos.getX() + vx * t;
-    double y = turretPos.getY() + vy * t;
-    double z = launchHeight + verticalSpeed * t - 0.5 * g * t * t;
-    if (z < 0) break;
-    arr[count * 3]     = x;
-    arr[count * 3 + 1] = y;
-    arr[count * 3 + 2] = z;
-    count++;
-}
+        // THIS LOOP WAS MISSING - fills arr with trajectory points
+        // Use time to hit ground, not TOF to goal
+        double timeToGround = (verticalSpeed + Math.sqrt(verticalSpeed * verticalSpeed + 2 * g * launchHeight)) / g;
 
-    // Build Pose3d array and publish
-    Pose3d[] poseArray = new Pose3d[count];
-    for (int i = 0; i < count; i++) {
-        poseArray[i] = new Pose3d(
-            arr[i * 3],
-            arr[i * 3 + 1],
-            arr[i * 3 + 2],
-            new Rotation3d()
-        );
+        for (int i = 0; i < steps; i++) {
+            double t = (timeToGround / steps) * i;
+            double x = turretPos.getX() + vx * t;
+            double y = turretPos.getY() + vy * t;
+            double z = launchHeight + verticalSpeed * t - 0.5 * g * t * t;
+            if (z < 0)
+                break;
+            arr[count * 3] = x;
+            arr[count * 3 + 1] = y;
+            arr[count * 3 + 2] = z;
+            count++;
+        }
+
+        // Build Pose3d array and publish
+        Pose3d[] poseArray = new Pose3d[count];
+        for (int i = 0; i < count; i++) {
+            poseArray[i] = new Pose3d(
+                    arr[i * 3],
+                    arr[i * 3 + 1],
+                    arr[i * 3 + 2],
+                    new Rotation3d());
+        }
     }
 
     // option 1
-    public Translation2d SOTF_CALC() {
+    // public Translation2d SOTF_CALC() {
 
-        Pose2d turretPose = getCurrentTurretPose();
+    // Pose2d turretPose = getCurrentTurretPose();
 
-        Translation2d realTarget = getScoringLocation();
-        // alliance == Alliance.Red
-        // ? VisionConstants.RED_HUB_POSE
-        // : VisionConstants.BLUE_HUB_POSE;
+    // Translation2d realTarget = getScoringLocation();
+    // // alliance == Alliance.Red
+    // // ? VisionConstants.RED_HUB_POSE
+    // // : VisionConstants.BLUE_HUB_POSE;
 
-        Translation2d turretPos = turretPose.getTranslation();
+    // Translation2d turretPos = turretPose.getTranslation();
 
-        // Convert robot velocity to field frame
-        ChassisSpeeds fieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
-                getState().Speeds,
-                getPose().getRotation());
+    // // Convert robot velocity to field frame
+    // ChassisSpeeds fieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
+    // getState().Speeds,
+    // getPose().getRotation());
 
-        Translation2d robotVelocity = new Translation2d(
-                fieldSpeeds.vxMetersPerSecond,
-                fieldSpeeds.vyMetersPerSecond);
+    // Translation2d robotVelocity = new Translation2d(
+    // fieldSpeeds.vxMetersPerSecond,
+    // fieldSpeeds.vyMetersPerSecond);
 
-        double omega = fieldSpeeds.omegaRadiansPerSecond;
+    // double omega = fieldSpeeds.omegaRadiansPerSecond;
 
-        // turret offset from robot center
-        Translation2d turretOffset = VisionConstants.turretToCenter.getTranslation();
+    // // turret offset from robot center
+    // Translation2d turretOffset = VisionConstants.turretToCenter.getTranslation();
 
-        // rotational velocity of turret
-        Translation2d rotationalVelocity = new Translation2d(
-                -omega * turretOffset.getY(),
-                omega * turretOffset.getX());
+    // // rotational velocity of turret
+    // Translation2d rotationalVelocity = new Translation2d(
+    // -omega * turretOffset.getY(),
+    // omega * turretOffset.getX());
 
-        Translation2d totalRobotVelocity = robotVelocity.plus(rotationalVelocity);
+    // Translation2d totalRobotVelocity = robotVelocity.plus(rotationalVelocity);
 
-        Translation2d virtualTarget = realTarget;
+    // Translation2d virtualTarget = realTarget;
 
-        Translation2d toTarget = virtualTarget.minus(getCurrentTurretPose().getTranslation());
+    // Translation2d toTarget =
+    // virtualTarget.minus(getCurrentTurretPose().getTranslation());
 
-        double distance = toTarget.getNorm();
+    // double distance = toTarget.getNorm();
 
-        double timeOfFlight = ShooterConstants.timeOfFlightInterpolation
-                .getPrediction(distance);
+    // double timeOfFlight = ShooterConstants.timeOfFlightInterpolation
+    // .getPrediction(distance);
 
-        // ITERATIVE SOLVE (2 passes)
-        for (int i = 0; i < 2; i++) {
+    // // ITERATIVE SOLVE (2 passes)
+    // for (int i = 0; i < 2; i++) {
 
-            Translation2d predictedTurretPos = turretPos.plus(totalRobotVelocity.times(timeOfFlight));
+    // Translation2d predictedTurretPos =
+    // turretPos.plus(totalRobotVelocity.times(timeOfFlight));
 
-            toTarget = virtualTarget.minus(predictedTurretPos);
+    // toTarget = virtualTarget.minus(predictedTurretPos);
 
-            distance = toTarget.getNorm();
+    // distance = toTarget.getNorm();
 
-            timeOfFlight = ShooterConstants.timeOfFlightInterpolation
-                    .getPrediction(distance);
+    // timeOfFlight = ShooterConstants.timeOfFlightInterpolation
+    // .getPrediction(distance);
 
-            virtualTarget = realTarget.minus(
-                    totalRobotVelocity.times(timeOfFlight));
-        }
-  trajectoryPublisher.set(poseArray);
+    // virtualTarget = realTarget.minus(
+    // totalRobotVelocity.times(timeOfFlight));
+    // }
+    // trajectoryPublisher.set(poseArray);
 
-    // Debug
-    SmartDashboard.putNumber("Trajectory VX", vx);
-    SmartDashboard.putNumber("Trajectory VY", vy);
-    SmartDashboard.putNumber("Trajectory Vertical Speed", verticalSpeed);
-    SmartDashboard.putNumber("Trajectory TOF", tof);
-    SmartDashboard.putNumber("Trajectory Distance", distance);
-    SmartDashboard.putNumber("Trajectory Exit Speed", exitSpeed);
-    SmartDashboard.putNumber("Trajectory Horizontal Speed", horizontalSpeed);
-    SmartDashboard.putNumber("Trajectory Point Count", count);
-    // Debug - verify virtual target matches shot angle
-double angleToVirtualTarget = Math.toDegrees(Math.atan2(
-    virtualTarget.getY() - turretPos.getY(),
-    virtualTarget.getX() - turretPos.getX()));
-SmartDashboard.putNumber("Angle to Virtual Target", angleToVirtualTarget);
-SmartDashboard.putNumber("Shot Command Angle", currentShotCommand.turretAngle().getDegrees());
-SmartDashboard.putNumber("Virtual Target X", virtualTarget.getX());
-SmartDashboard.putNumber("Virtual Target Y", virtualTarget.getY());
-SmartDashboard.putNumber("Turret Pos X", turretPos.getX());
-SmartDashboard.putNumber("Turret Pos Y", turretPos.getY());
-}
+    // // Debug
+    // SmartDashboard.putNumber("Trajectory VX", vx);
+    // SmartDashboard.putNumber("Trajectory VY", vy);
+    // SmartDashboard.putNumber("Trajectory Vertical Speed", verticalSpeed);
+    // SmartDashboard.putNumber("Trajectory TOF", tof);
+    // SmartDashboard.putNumber("Trajectory Distance", distance);
+    // SmartDashboard.putNumber("Trajectory Exit Speed", exitSpeed);
+    // SmartDashboard.putNumber("Trajectory Horizontal Speed", horizontalSpeed);
+    // SmartDashboard.putNumber("Trajectory Point Count", count);
+    // // Debug - verify virtual target matches shot angle
+    // double angleToVirtualTarget = Math.toDegrees(Math.atan2(
+    // virtualTarget.getY() - turretPos.getY(),
+    // virtualTarget.getX() - turretPos.getX()));
+    // SmartDashboard.putNumber("Angle to Virtual Target", angleToVirtualTarget);
+    // SmartDashboard.putNumber("Shot Command Angle",
+    // currentShotCommand.turretAngle().getDegrees());
+    // SmartDashboard.putNumber("Virtual Target X", virtualTarget.getX());
+    // SmartDashboard.putNumber("Virtual Target Y", virtualTarget.getY());
+    // SmartDashboard.putNumber("Turret Pos X", turretPos.getX());
+    // SmartDashboard.putNumber("Turret Pos Y", turretPos.getY());
+    // }
 
-    private ChassisSpeeds filteredFieldSpeeds = new ChassisSpeeds(0, 0, 0);
+    // private ChassisSpeeds filteredFieldSpeeds = new ChassisSpeeds(0, 0, 0);
 
-        return correctedVector;
-    }
-    public ShotCalc.ShooterCommand currentShotCommand =
-        new ShotCalc.ShooterCommand(0, new Rotation2d(), 0);
+    // return correctedVector;
+    // }
+    public ShotCalc.ShooterCommand currentShotCommand = new ShotCalc.ShooterCommand(0, new Rotation2d(), 0);
 
     public Pose2d getCurrentTurretPose() {
         Pose2d turretPose = getPose().transformBy(VisionConstants.turretToCenter);
@@ -292,93 +296,102 @@ SmartDashboard.putNumber("Turret Pos Y", turretPos.getY());
     }
 
     // option 2
-    public double[] SOTFcalc() {
+    // public double[] SOTFcalc() {
 
-        // 1. GET TURRET POSE
-        Pose2d turretPose = getCurrentTurretPose();
-        Translation2d turretPos = turretPose.getTranslation();
+    // // 1. GET TURRET POSE
+    // Pose2d turretPose = getCurrentTurretPose();
+    // Translation2d turretPos = turretPose.getTranslation();
 
-        // 2. GET TARGET
-        Translation2d realTarget = getScoringLocation();
+    // // 2. GET TARGET
+    // Translation2d realTarget = getScoringLocation();
 
-        // 3. FIELD-RELATIVE SPEEDS
-        ChassisSpeeds rawFieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
-                getState().Speeds,
-                getPose().getRotation());
+    // // 3. FIELD-RELATIVE SPEEDS
+    // ChassisSpeeds rawFieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
+    // getState().Speeds,
+    // getPose().getRotation());
 
-        // 4. LOW-PASS FILTER
-        double alpha = 0.15;
-        filteredFieldSpeeds.vxMetersPerSecond = alpha * rawFieldSpeeds.vxMetersPerSecond
-                + (1 - alpha) * filteredFieldSpeeds.vxMetersPerSecond;
-        filteredFieldSpeeds.vyMetersPerSecond = alpha * rawFieldSpeeds.vyMetersPerSecond
-                + (1 - alpha) * filteredFieldSpeeds.vyMetersPerSecond;
-        filteredFieldSpeeds.omegaRadiansPerSecond = rawFieldSpeeds.omegaRadiansPerSecond;
+    // // 4. LOW-PASS FILTER
+    // double alpha = 0.15;
+    // filteredFieldSpeeds.vxMetersPerSecond = alpha *
+    // rawFieldSpeeds.vxMetersPerSecond
+    // + (1 - alpha) * filteredFieldSpeeds.vxMetersPerSecond;
+    // filteredFieldSpeeds.vyMetersPerSecond = alpha *
+    // rawFieldSpeeds.vyMetersPerSecond
+    // + (1 - alpha) * filteredFieldSpeeds.vyMetersPerSecond;
+    // filteredFieldSpeeds.omegaRadiansPerSecond =
+    // rawFieldSpeeds.omegaRadiansPerSecond;
 
-        // 5. ROTATIONAL VELOCITY CORRECTION
-        double omega = filteredFieldSpeeds.omegaRadiansPerSecond;
-        Translation2d turretOffset = turretPos.minus(getPose().getTranslation());
-        Translation2d rotationalVelocity = new Translation2d(
-                -omega * turretOffset.getY(),
-                omega * turretOffset.getX());
+    // // 5. ROTATIONAL VELOCITY CORRECTION
+    // double omega = filteredFieldSpeeds.omegaRadiansPerSecond;
+    // Translation2d turretOffset = turretPos.minus(getPose().getTranslation());
+    // Translation2d rotationalVelocity = new Translation2d(
+    // -omega * turretOffset.getY(),
+    // omega * turretOffset.getX());
 
-        // 6. TOTAL ROBOT VELOCITY
-        Translation2d totalVelocity = new Translation2d(
-                filteredFieldSpeeds.vxMetersPerSecond,
-                filteredFieldSpeeds.vyMetersPerSecond).plus(rotationalVelocity);
+    // // 6. TOTAL ROBOT VELOCITY
+    // Translation2d totalVelocity = new Translation2d(
+    // filteredFieldSpeeds.vxMetersPerSecond,
+    // filteredFieldSpeeds.vyMetersPerSecond).plus(rotationalVelocity);
 
-        // 7. ITERATIVE SOLVE — predict turret position only
-        // Resolves circular dependency: distance -> TOF -> corrected aim -> new
-        // distance
-        Translation2d toTarget = realTarget.minus(turretPos);
-        double distance = toTarget.getNorm();
-        double timeOfFlight = ShooterConstants.timeOfFlightInterpolation.getPrediction(distance);
+    // // 7. ITERATIVE SOLVE — predict turret position only
+    // // Resolves circular dependency: distance -> TOF -> corrected aim -> new
+    // // distance
+    // Translation2d toTarget = realTarget.minus(turretPos);
+    // double distance = toTarget.getNorm();
+    // double timeOfFlight =
+    // ShooterConstants.timeOfFlightInterpolation.getPrediction(distance);
 
-        for (int i = 0; i < 2; i++) {
-            // Where will the turret be when the ball arrives?
-            Translation2d predictedTurretPos = turretPos.plus(totalVelocity.times(timeOfFlight));
+    // for (int i = 0; i < 2; i++) {
+    // // Where will the turret be when the ball arrives?
+    // Translation2d predictedTurretPos =
+    // turretPos.plus(totalVelocity.times(timeOfFlight));
 
-            // Recalculate distance and TOF based on corrected geometry
-            toTarget = realTarget.minus(predictedTurretPos);
-            distance = toTarget.getNorm();
-            timeOfFlight = ShooterConstants.timeOfFlightInterpolation.getPrediction(distance);
-        }
+    // // Recalculate distance and TOF based on corrected geometry
+    // toTarget = realTarget.minus(predictedTurretPos);
+    // distance = toTarget.getNorm();
+    // timeOfFlight =
+    // ShooterConstants.timeOfFlightInterpolation.getPrediction(distance);
+    // }
 
-        // 8. FLYWHEEL RPS -> EXIT VELOCITY CONVERSION
-        double wheelDiameterMeters = Units.inchesToMeters(4); // TODO: replace with your actual wheel diameter
-        double efficiency = 0.5; // TODO: tune this on your robot
-        double flywheelRPS = ShooterConstants.shooterSpeedInterpolation.getPrediction(distance);
-        double totalExitVelocity = flywheelRPS * Math.PI * wheelDiameterMeters * efficiency;
+    // // 8. FLYWHEEL RPS -> EXIT VELOCITY CONVERSION
+    // double wheelDiameterMeters = Units.inchesToMeters(4); // TODO: replace with
+    // your actual wheel diameter
+    // double efficiency = 0.5; // TODO: tune this on your robot
+    // double flywheelRPS =
+    // ShooterConstants.shooterSpeedInterpolation.getPrediction(distance);
+    // double totalExitVelocity = flywheelRPS * Math.PI * wheelDiameterMeters *
+    // efficiency;
 
-        // 9. VECTOR SUBTRACTION FOR AIM
-        // Desired shot velocity toward real target, minus robot velocity
-        double idealHorizontalSpeed = totalExitVelocity * Math.cos(
-                Math.toRadians(ShooterConstants.hoodAngleInterpolation.getPrediction(distance)));
-        Translation2d correctedVector = realTarget.minus(turretPos);
-        double correctedDist = correctedVector.getNorm();
-        Translation2d shotVec = correctedVector.div(correctedDist)
-                .times(idealHorizontalSpeed)
-                .minus(totalVelocity);
+    // // 9. VECTOR SUBTRACTION FOR AIM
+    // // Desired shot velocity toward real target, minus robot velocity
+    // double idealHorizontalSpeed = totalExitVelocity * Math.cos(
+    // Math.toRadians(ShooterConstants.hoodAngleInterpolation.getPrediction(distance)));
+    // Translation2d correctedVector = realTarget.minus(turretPos);
+    // double correctedDist = correctedVector.getNorm();
+    // Translation2d shotVec = correctedVector.div(correctedDist)
+    // .times(idealHorizontalSpeed)
+    // .minus(totalVelocity);
 
-        // 10. TURRET ANGLE
-        Rotation2d aimAngle = shotVec.getAngle();
+    // // 10. TURRET ANGLE
+    // Rotation2d aimAngle = shotVec.getAngle();
 
-        // 11. BACK-SOLVE FOR HOOD PITCH
-        double newHorizontalSpeed = shotVec.getNorm();
-        double ratio = Math.min(newHorizontalSpeed / totalExitVelocity, 1.0);
-        double newPitch = Math.toDegrees(Math.acos(ratio));
+    // // 11. BACK-SOLVE FOR HOOD PITCH
+    // double newHorizontalSpeed = shotVec.getNorm();
+    // double ratio = Math.min(newHorizontalSpeed / totalExitVelocity, 1.0);
+    // double newPitch = Math.toDegrees(Math.acos(ratio));
 
-        // 12. DEBUG VISUALIZATION
-        // TheField.getObject("turret pose").setPose(turretPose);
-        // TheField.getObject("corrected shot vector").setPose(
-        // new Pose2d(turretPos.plus(shotVec), aimAngle));
+    // // 12. DEBUG VISUALIZATION
+    // // TheField.getObject("turret pose").setPose(turretPose);
+    // // TheField.getObject("corrected shot vector").setPose(
+    // // new Pose2d(turretPos.plus(shotVec), aimAngle));
 
-        // 13. RETURN [turretAngle (degrees), hoodPitch (degrees), flywheelRPS]
-        return new double[] {
-                aimAngle.getDegrees(),
-                newPitch,
-                flywheelRPS
-        };
-    }
+    // // 13. RETURN [turretAngle (degrees), hoodPitch (degrees), flywheelRPS]
+    // return new double[] {
+    // aimAngle.getDegrees(),
+    // newPitch,
+    // flywheelRPS
+    // };
+    // }
 
     // SOTF Solution 2
     // public double[] SOTFcalc() {
@@ -571,7 +584,7 @@ SmartDashboard.putNumber("Turret Pos Y", turretPos.getY());
         if (Utils.isSimulation()) {
             startSimThread();
         }
-        SmartDashboard.putData("The field", TheField);
+        SmartDashboard.putData("DRIVE/The field", TheField);
         configureAutoBuilder();
     }
 
@@ -606,17 +619,17 @@ SmartDashboard.putNumber("Turret Pos Y", turretPos.getY());
         }
 
         // Publish clean 50Hz pose for simulation visualization
-if (Robot.isSimulation()) {
-    SmartDashboard.putNumberArray("SimRobotPose", new double[]{
-        getPose().getX(),
-        getPose().getY(),
-        getPose().getRotation().getRadians()
-    });
-}
+        if (Robot.isSimulation()) {
+            SmartDashboard.putNumberArray("SIM/SimRobotPose", new double[] {
+                    getPose().getX(),
+                    getPose().getY(),
+                    getPose().getRotation().getRadians()
+            });
+        }
 
-if (Robot.isSimulation()) {
-    updateBallTrajectory();
-}
+        if (Robot.isSimulation()) {
+            updateBallTrajectory();
+        }
 
         // Update field visualization
         TheField.getObject("robot").setPose(getPose());
@@ -638,16 +651,15 @@ if (Robot.isSimulation()) {
         }
 
         // SmartDashboard logging
-        SmartDashboard.putNumber("Pose X", getPose().getX());
-        SmartDashboard.putNumber("Pose Y", getPose().getY());
-        SmartDashboard.putNumber("Pose Rotation", getPose().getRotation().getDegrees());
-        SmartDashboard.putNumber("Distance From Hub", getDistanceFromHub());
-        SmartDashboard.putNumber("Field Vx", ChassisSpeeds.fromRobotRelativeSpeeds(
+        SmartDashboard.putNumber("DRIVE/Pose X", getPose().getX());
+        SmartDashboard.putNumber("DRIVE/Pose Y", getPose().getY());
+        SmartDashboard.putNumber("DRIVE/Pose Rotation", getPose().getRotation().getDegrees());
+        SmartDashboard.putNumber("DRIVE/Distance From Hub", getDistanceFromHub());
+        SmartDashboard.putNumber("DRIVE/Field Vx", ChassisSpeeds.fromRobotRelativeSpeeds(
                 getState().Speeds, getPose().getRotation()).vxMetersPerSecond);
-        SmartDashboard.putNumber("Field Vy", ChassisSpeeds.fromRobotRelativeSpeeds(
+        SmartDashboard.putNumber("DRIVE/Field Vy", ChassisSpeeds.fromRobotRelativeSpeeds(
                 getState().Speeds, getPose().getRotation()).vyMetersPerSecond);
-        SmartDashboard.putNumber("Omega Rad", getState().Speeds.omegaRadiansPerSecond);
-        
+        SmartDashboard.putNumber("DRIVE/Omega Rad", getState().Speeds.omegaRadiansPerSecond);
 
         // Operator perspective
         if (Robot.isSimulation()) {

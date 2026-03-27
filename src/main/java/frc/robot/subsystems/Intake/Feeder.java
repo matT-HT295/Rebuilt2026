@@ -144,12 +144,12 @@ public class Feeder extends SubsystemBase {
 
     @Override
     public void periodic() {
-        SmartDashboard.putString("FEEDER WANTED STATE", wantedState.toString());
-        SmartDashboard.putString("FEEDER SYSTEM STATE", systemState.toString());
-        SmartDashboard.putNumber("Spindexer Speed", spindexerMotorSpeed);
-        SmartDashboard.putNumber("Tower Speed", towerMotorSpeed);
-        SmartDashboard.putBoolean("Feeder Shooting", 
-            spindexerMotorSpeed == FeederConstants.feederShootSpeed);
+        SmartDashboard.putString("STATE/FEEDER WANTED STATE", wantedState.toString());
+        SmartDashboard.putString("STATE/FEEDER SYSTEM STATE", systemState.toString());
+        SmartDashboard.putNumber("FEEDER/Spindexer Speed", spindexerMotorSpeed);
+        SmartDashboard.putNumber("FEEDER/Tower Speed", towerMotorSpeed);
+        SmartDashboard.putBoolean("FEEDER/Feeder Shooting",
+                spindexerMotorSpeed == FeederConstants.feederShootSpeed);
 
         systemState = changeCurrentSystemState();
         applyState();

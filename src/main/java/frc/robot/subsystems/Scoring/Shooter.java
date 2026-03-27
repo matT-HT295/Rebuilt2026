@@ -59,6 +59,7 @@ public class Shooter extends SubsystemBase {
     /* STATES */
     ShooterWantedState wantedState = ShooterWantedState.IDLE;
     SystemState systemState = SystemState.IDLING;
+    static SystemState publicSystemState = SystemState.IDLING;
 
     /** Creates a new Shooter */
     public Shooter(CommandSwerveDrivetrain m_drivetrain) {
@@ -226,19 +227,19 @@ public class Shooter extends SubsystemBase {
                 // motorspeed = drivetrain.SOTFcalc()[2];
 
                 // option 3
-                ChassisSpeeds rawFieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
-                        drivetrain.getState().Speeds,
-                        drivetrain.getPose().getRotation());
-                position = ShotCalc.calculateSOTF(
-                        drivetrain.getPose().getTranslation(),
-                        rawFieldSpeeds,
-                        drivetrain.getScoringLocation(),
-                        ShooterConstants.latencyCompensation).hoodAngle();
-                motorspeed = ShotCalc.calculateSOTF(
-                        drivetrain.getPose().getTranslation(),
-                        rawFieldSpeeds,
-                        drivetrain.getScoringLocation(),
-                        ShooterConstants.latencyCompensation).RPS();
+                // ChassisSpeeds rawFieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
+                // drivetrain.getState().Speeds,
+                // drivetrain.getPose().getRotation());
+                // position = ShotCalc.calculateSOTF(
+                // drivetrain.getPose().getTranslation(),
+                // rawFieldSpeeds,
+                // drivetrain.getScoringLocation(),
+                // ShooterConstants.latencyCompensation).hoodAngle();
+                // motorspeed = ShotCalc.calculateSOTF(
+                // drivetrain.getPose().getTranslation(),
+                // rawFieldSpeeds,
+                // drivetrain.getScoringLocation(),
+                // ShooterConstants.latencyCompensation).RPS();
                 // option 4
                 // frc.robot.subsystems.Scoring.ShotCalc2.ShooterCommand values =
                 // ShotCalc2.calculateSOTF(drivetrain);
@@ -325,14 +326,18 @@ public class Shooter extends SubsystemBase {
         }
     }
 
+    public static SystemState getState() {
+        return publicSystemState;
+    }
+
     private void logValues() {
-        SmartDashboard.putNumber("Shooter Actual Speed", getShooterVelocity());
-        SmartDashboard.putNumber("Hood Actual Position", getHoodPosition());
-        SmartDashboard.putNumber("Shooter Wanted Speed", motorspeed);
-        SmartDashboard.putNumber("Hood Wanted Position", position);
-        SmartDashboard.putBoolean("Shooter Is Ready", shooterIsReady());
-        SmartDashboard.putString("SHOOTER WANTED STATE", wantedState.toString());
-        SmartDashboard.putString("SHOOTER SYSTEM STATE", systemState.toString());
+        SmartDashboard.putNumber("SHOOTER/Shooter Actual Speed", getShooterVelocity());
+        SmartDashboard.putNumber("SHOOTER/Hood Actual Position", getHoodPosition());
+        SmartDashboard.putNumber("SHOOTER/Shooter Wanted Speed", motorspeed);
+        SmartDashboard.putNumber("SHOOTER/Hood Wanted Position", position);
+        SmartDashboard.putBoolean("SHOOTER/Shooter Is Ready", shooterIsReady());
+        SmartDashboard.putString("STATE/SHOOTER WANTED STATE", wantedState.toString());
+        SmartDashboard.putString("STATE/SHOOTER SYSTEM STATE", systemState.toString());
 
         if (!Robot.isSimulation()) {
             SmartDashboard.putNumber("Hood Motor Current", getHoodCurrent());

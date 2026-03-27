@@ -80,14 +80,16 @@ public class Intake extends SubsystemBase {
             if (!status.isOK()) {
                 System.out.println("Could not apply intake configs, error code: " + status.toString());
             }
+            for (int i = 0; i < 5; ++i) {
+                status = intakeExtensionMotor.getConfigurator().apply(intakeExtensionMotorConfig);
+                if (status.isOK())
+                    break;
+            }
+            if (!status.isOK()) {
+                System.out.println("Could not apply configs, error code: " + status.toString());
+            }
+
         }
-        for (int i = 0; i < 5; ++i) {
-            status = intakeExtensionMotor.getConfigurator().apply(intakeExtensionMotorConfig);
-            if (status.isOK())
-                break;
-        }
-        if (!status.isOK()) {
-            System.out.println("Could not apply configs, error code: " + status.toString());
     }
 
     // Sim safe helpers
@@ -142,7 +144,7 @@ public class Intake extends SubsystemBase {
                 // yield SystemState.IDLING;
                 // } else {
                 yield SystemState.INTAKING;
-            // }
+            }
             case RETRACT -> {
                 if (systemState == SystemState.SCORING && !Robot.isSimulation()) {
                     intakeMotorConfig.Voltage.PeakReverseVoltage = IntakeConstants.intakeMotionMagicExpoK_A;
@@ -239,11 +241,15 @@ public class Intake extends SubsystemBase {
         }
     }
 
+    public SystemState getState() {
+        return systemState;
+    }
+
     private void LogValues() {
-        SmartDashboard.putNumber("Extension Motor Position", getExtensionPosition());
-        SmartDashboard.putNumber("CANrange Distance", getCanRangeDistance());
-        SmartDashboard.putString("INTAKE WANTED STATE", wantedState.toString());
-        SmartDashboard.putString("INTAKE SYSTEM STATE", systemState.toString());
+        SmartDashboard.putNumber("INTAKE/Extension Motor Position", getExtensionPosition());
+        SmartDashboard.putNumber("INTAKE/CANrange Distance", getCanRangeDistance());
+        SmartDashboard.putString("STATE/INTAKE WANTED STATE", wantedState.toString());
+        SmartDashboard.putString("STATE/INTAKE SYSTEM STATE", systemState.toString());
     }
 
     @Override
