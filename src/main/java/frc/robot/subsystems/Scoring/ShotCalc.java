@@ -67,6 +67,8 @@ public final class ShotCalc {
         // Resolves circular dependency: distance -> TOF -> corrected aim -> new
         // distance
         for (int i = 0; i < 20; i++) {
+            // ADJUSTMENT: Calculate total vel of ball by adding robot vel to ball's vel
+            // when standing
             // Where will the turret be when the ball arrives
             Translation2d predictedTurretPos = turretPosition.plus(totalVelocity.times(timeOfFlight));
 

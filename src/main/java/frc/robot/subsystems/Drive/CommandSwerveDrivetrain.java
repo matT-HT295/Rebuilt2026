@@ -191,6 +191,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
                     arr[i * 3 + 2],
                     new Rotation3d());
         }
+        trajectoryPublisher.set(poseArray);
     }
 
     // option 1
