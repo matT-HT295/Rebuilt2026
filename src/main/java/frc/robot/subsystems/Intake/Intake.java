@@ -167,6 +167,21 @@ public class Intake extends SubsystemBase {
                 }
                 yield SystemState.OUTTAKING;
             }
+            case MANUAL_CONTROL_POS -> {
+                yield SystemState.IN_MANUAL_CONTROL_POS;
+            }
+
+            case MANUAL_CONTROL_NEG -> {
+                yield SystemState.IN_MANUAL_CONTROL_NEG;
+            }
+
+            case MANUAL_IDLE -> {
+                yield SystemState.IN_MANUAL_IDLE;
+            }
+
+            case MANUAL_RESET -> {
+                yield SystemState.IN_MANUAL_RESET;
+            }
         };
     }
 
@@ -209,6 +224,22 @@ public class Intake extends SubsystemBase {
             case OUTTAKING:
                 motorspeed = -IntakeConstants.intakingSpeed;
                 break;
+            case IN_MANUAL_CONTROL_POS:
+                position = intakeExtensionMotor.getPosition().getValueAsDouble();
+                intakeExtensionMotor.set(0.01);
+                break;
+            case IN_MANUAL_CONTROL_NEG:
+                position = intakeExtensionMotor.getPosition().getValueAsDouble();
+                intakeExtensionMotor.set(-0.01);
+                break;
+            case IN_MANUAL_IDLE:
+                position = intakeExtensionMotor.getPosition().getValueAsDouble();
+                intakeExtensionMotor.set(0);
+                break;
+            case IN_MANUAL_RESET:
+                setZero();
+                break;
+
         }
     }
 

@@ -277,7 +277,11 @@ public final class Constants {
             RETRACT,
             RESET,
             SCORE,
-            OUTTAKE
+            OUTTAKE,
+            MANUAL_CONTROL_POS,
+            MANUAL_CONTROL_NEG,
+            MANUAL_IDLE,
+            MANUAL_RESET
         }
 
         public enum SystemState {
@@ -286,7 +290,11 @@ public final class Constants {
             RETRACTING,
             RESETING,
             SCORING,
-            OUTTAKING
+            OUTTAKING,
+            IN_MANUAL_CONTROL_POS,
+            IN_MANUAL_CONTROL_NEG,
+            IN_MANUAL_IDLE,
+            IN_MANUAL_RESET
         }
     }
 

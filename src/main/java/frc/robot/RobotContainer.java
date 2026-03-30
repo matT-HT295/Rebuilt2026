@@ -208,7 +208,8 @@ public class RobotContainer {
 
         // retract
         driver.leftBumper()
-                .onTrue(new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.RETRACT)))
+                .onTrue(new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.RETRACT))) // make this
+                                                                                                          // RESET
                 .onFalse(new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.IDLE)));
 
         // outtake
@@ -216,6 +217,7 @@ public class RobotContainer {
                 .onTrue(new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.OUTTAKE)))
                 .onFalse(new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.IDLE)));
 
+        // eco mode
         driver.povUp()
                 .onTrue(
                         new ParallelCommandGroup(
@@ -228,6 +230,20 @@ public class RobotContainer {
                                 new InstantCommand(() -> intake.disableEcoModeIntake()),
                                 new InstantCommand(() -> turret.disableEcoModeTurret()),
                                 new InstantCommand(() -> feeder.disableEcoModeFeeder())));
+        // manual intake safety
+        // run one way
+        driver.povLeft()
+                .onTrue(new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.MANUAL_CONTROL_POS)))
+                .onFalse(new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.MANUAL_IDLE)));
+
+        // run other way
+        driver.povRight()
+                .onTrue(new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.MANUAL_CONTROL_NEG)))
+                .onFalse(new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.MANUAL_IDLE)));
+
+        // manually set intake to 0
+        driver.back().onTrue(new InstantCommand(() -> intake.setZero()));
+
         // brake
         driver.rightTrigger().whileTrue(drivetrain.applyRequest(() -> brake));
         // driver.b().whileTrue(drivetrain.applyRequest(() ->
@@ -279,6 +295,12 @@ public class RobotContainer {
         operator.leftTrigger()
                 .onTrue((new ParallelCommandGroup(
                         new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.RETRACT)))))
+                .onFalse((new ParallelCommandGroup(
+                        new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.INTAKE)))));
+        // slow squeeze
+        operator.leftBumper()
+                .onTrue((new ParallelCommandGroup(
+                        new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.SCORE)))))
                 .onFalse((new ParallelCommandGroup(
                         new InstantCommand(() -> intake.setWantedIntakeState(IntakeWantedState.INTAKE)))));
 
