@@ -11,15 +11,33 @@
           }
         },
         {
+          "type": "named",
+          "data": {
+            "name": "FeederIdle"
+          }
+        },
+        {
           "type": "path",
           "data": {
             "pathName": "RCircle2"
           }
         },
         {
+          "type": "named",
+          "data": {
+            "name": "FeederIdle"
+          }
+        },
+        {
           "type": "path",
           "data": {
             "pathName": "RTrenchMid1_OLD"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "FeederIdle"
           }
         }
       ]
