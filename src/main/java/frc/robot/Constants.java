@@ -354,7 +354,6 @@ public final class Constants {
 
         public static int towerMotorID = 41;
         public static int spindexerMotorID = 40;
-        public static int rollerMotorID = 42;
 
         public static double feederIntakeSpeed = 0;
         public static double feederShootSpeed = 0.8;
