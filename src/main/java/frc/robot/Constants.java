@@ -258,7 +258,6 @@ public final class Constants {
         public static int ExtensionStatorCurrentLimit = 50; // 80
 
         public static int intakeMotorID = 32;
-        public static int intakeMotor2ID = 34;
         public static int intakeExtensionMotorID = 31;
         public static int canRangeID = 33;
 
